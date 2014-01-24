@@ -5,10 +5,13 @@
 #include <errno.h>      /* for 'ENOENT' and 'ENOMEM' */
 #define MAXPARAMS 20
 #define BUFFERSIZE 200
+#define DEBUG 0
+#define IFBUG if(DEBUG==1){
+#define ENDBUG }
 
 
 void parseArgs(char *input, char **args){
-    //printf("first token is %s\n", "x");
+    IFBUG printf("first token is %s\n", "x"); ENDBUG
     char *tok = strtok(input, " \n");
     int i=0;
     while(tok!=NULL){
@@ -52,33 +55,21 @@ int main(){
             chdir(args[1]);
         }
         else{
-            //printArgs(args);
+            IFBUG printArgs(args); ENDBUG
             int pid = fork();
             if(pid > 0){ // parent
-                //printf("parent: new child id =%d\n",pid);
-                //printf("parent: waiting for child to execute command\n",pid);
+                IFBUG printf("parent: new child id =%d\n",pid); ENDBUG
+                IFBUG printf("parent: waiting for child to execute command\n",pid); ENDBUG
                 int pid = wait();
-                //printf("parent: child with pid %d returned\n",pid);
+                IFBUG printf("parent: child with pid %d returned\n",pid); ENDBUG
             }
             else{ // child
-                //printf("arg[0] %s\n", args[0]);
-                //printArgs(args);
+                IFBUG printf("arg[0] %s\n", args[0]); ENDBUG
+                IFBUG printArgs(args); ENDBUG
                 execvp(args[0], args); 
                 //###  execl(x,x, "dummy1",NULL); //needs path to full executable
                 exit(0);
             }
         }
     }
-    /*
-    int p1 = fork();
-    if(p1 > 0){
-        printf("parent: new child id =%d\n",p1);
-    }
-    else{
-        char * args[] = {x,"dummy_VP",  NULL};
-        execvp(x, args ); 
-        //###  execl(x,x, "dummy1",NULL); //needs path to full executable
-        return 0;
-    }
-    */
 }
