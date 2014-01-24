@@ -46,6 +46,7 @@ int main(int argc, char** argv){
 
 		// Calling the tokenizer function on the input line    
 		args = tokenize(input);	
+        IFBUG printf("tokenize %s\n", input);  ENDBUG
 		// Uncomment to print tokens
 	 
 		for(i=0;args[i]!=NULL;i++){
@@ -64,13 +65,15 @@ int main(int argc, char** argv){
         else if(strcmp(args[0], "run") == 0){
             printf("Runnig executabe\n");
             int pid = fork();
+                IFBUG printf("setting childpid ACTUAL.. i am process : %d\n", getpid());  ENDBUG
             childpid = pid;
             if(pid > 0){ // parent
-                IFBUG printf("parent: new child id =%d\n",pid); ENDBUG
-                IFBUG printf("parent: waiting for child to execute command\n",pid); ENDBUG
-                int pid = wait();
-                childpid = -1;
-                IFBUG printf("parent: jash : child with pid %d returned\n",pid); ENDBUG
+                IFBUG printf("parent run: childpid = %d\n ", childpid);  ENDBUG
+                IFBUG printf("parent run: new child id =%d\n",pid); ENDBUG
+                IFBUG printf("parent run: waiting for child to execute command\n",pid); ENDBUG
+                waitpid(pid, 0, 0); //important for wait so that child doesnt become zombie
+                //childpid = -1;
+                IFBUG printf("parent run: jash : child with pid %d returned\n",pid); ENDBUG
             }
             else{ // child
                 IFBUG printf("arg[0] %s\n", args[0]); ENDBUG
@@ -79,6 +82,9 @@ int main(int argc, char** argv){
                 //###  execl(x,x, "dummy1",NULL); //needs path to full executable
                 exit(0);
             }
+        }
+        else if(strcmp(args[0], "parallel") == 0){
+            parallel(args);
         }
         else{
             execute_command(args);
@@ -139,4 +145,34 @@ void execute_batch(char ** myargs){
         //free(args);
         //free malloc
     }
+}
+
+
+int findseperator(char ** args, int i){
+    while(args[i]!=NULL){
+        if(strcmp(args[i], ":::") == 0) return i;
+        i++;
+    }
+    return i;
+}
+
+int parallel(char ** args){
+    int cont = 1;
+    int i = 1;
+    int tok = 1;
+    IFBUG printArgs(args + 2);  ENDBUG
+    while(cont){
+        i = findseperator(args, i);
+        if(args[i] == NULL){
+            cont = 0;
+        }
+        args[i] = NULL; //now req arglist is [tok,i]
+        printf("command starts at %d, null at %d\n", tok, i);
+        /*  */
+        execute_command_parallel(args+tok);
+        /*  */
+        i++;
+        tok = i;
+    }
+    wait();
 }

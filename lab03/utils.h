@@ -8,7 +8,7 @@
 
 
 #define MAXLINE 1000
-#define DEBUG 1
+#define DEBUG 0
 #define IFBUG if(DEBUG==1){
 #define ENDBUG }
 
@@ -99,10 +99,35 @@ int change_dir(char ** args){
 int execute_command(char **args){
     IFBUG printArgs(args); ENDBUG
     int pid = fork();
+    childpid = pid;
+    IFBUG printf("setting childpid ACTUAL.. i am process : %d\n", getpid());  ENDBUG
     if(pid > 0){ // parent
         IFBUG printf("parent: new child id =%d\n",pid); ENDBUG
         IFBUG printf("parent: waiting for child to execute command\n",pid); ENDBUG
-        wait();
+        waitpid(pid, 0, 0); //important for wait so that child doesnt become zombie
+        //childpid = -1;
+        IFBUG printf("parent: execute_commad : child with pid %d returned\n",pid); ENDBUG
+        return -1;
+    }
+    else{ // child
+        IFBUG printf("arg[0] %s\n", args[0]); ENDBUG
+        IFBUG printArgs(args); ENDBUG
+        execvp(args[0], args); 
+        printf("error in executing the command\n");
+        //error, so send signal SIGINT to main program
+        kill(parentpid, SIGINT);
+        exit(0);
+        //###  execl(x,x, "dummy1",NULL); //needs path to full executable
+    }
+}
+
+int execute_command_parallel(char **args){
+    printf("-------------------------  ");
+    IFBUG printArgs(args); ENDBUG
+    int pid = fork();
+    if(pid > 0){ // parent
+        IFBUG printf("parent: new child id =%d\n",pid); ENDBUG
+        IFBUG printf("parent: waiting for child to execute command\n",pid); ENDBUG
         IFBUG printf("parent: execute_commad : child with pid %d returned\n",pid); ENDBUG
         return -1;
     }
@@ -124,8 +149,13 @@ void parent_handler(int sig, siginfo_t *siginfo, void *context)
 
    if(getpid() == parentpid){
        if(childpid != -1 && childpid!=0){
-            IFBUG printf("killing the child%d\n",parentpid,childpid);  ENDBUG
-            kill(childpid, SIGKILL);
+            int child = childpid;
+            printf("killing the child%d %d\n",parentpid,childpid);
+            childpid = -1;
+            kill(child, SIGTERM);
+            printf("waiting for child to get killed\n");
+            int x = waitpid(child, 0, 0);
+            printf("child %d got killd\n", x);
        }
    }
 }
@@ -146,9 +176,30 @@ void parent(){
         perror ("sigaction");
     }
 }
+void child_handler(int sig, siginfo_t *siginfo, void *context)
+{
+    printf("Killing myself\n");
+    raise(SIGKILL);
+}
+
+void child(){
+    //printf ("this is the parent, with id %d\n", (int) getpid ());
+    struct sigaction act;
+ 
+    memset (&act, '\0', sizeof(act));
+ 
+    /* Use the sa_sigaction field because the handles has two additional parameters */
+    act.sa_sigaction = child_handler;
+ 
+    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field, not sa_handler. */
+    act.sa_flags = SA_SIGINFO;
+ 
+    if (sigaction(SIGTERM, &act, NULL) < 0) {
+        perror ("sigaction");
+    }
+}
+
 
 void myfree(void *v){
     if(v!=NULL) free(v);
 }
-
-
