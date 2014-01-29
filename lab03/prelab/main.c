@@ -21,21 +21,13 @@ void parseArgs(char *input, char **args){
     args[i] = NULL;
 }
 
-void printArgs(char **args){
-    int i=0;
-    printf("printing args .. :\n");
-    while((args[i] != NULL) && i < MAXPARAMS){
-        printf("\t%s\n", args[i]);
-        i++;
-    }
-}
 
 int main(){
 
     char ** args = malloc(MAXPARAMS * (sizeof(char *)));
     char a[20] = "hello";
     args[0] = a;
-    printf("line %s\n", args[0]);
+    IFBUG printf("line %s\n", args[0]);  ENDBUG
 
     char command[BUFFERSIZE] = "ls -l help";
 

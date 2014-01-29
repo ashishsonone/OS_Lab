@@ -178,16 +178,16 @@ void parent_handler(int sig, siginfo_t *siginfo, void *context)
             int child = childpid;
             childpid = -1;
             kill(child, SIGTERM);
-            printf("SIGINT parent %d : waiting for child to get killed\n", getpid());
+            IFBUG printf("SIGINT parent %d : waiting for child to get killed\n", getpid()); ENDBUG
             int status;
             int p = waitpid(childpid, &status, 0);
-            printf("SIGINT parent %d : child %d got killd\n", getpid(), p);
+            IFBUG printf("SIGINT parent %d : child %d got killd\n", getpid(), p); ENDBUG
        }
    }
 }
 
 void child_handler(int sig, siginfo_t *siginfo, void *context)
 {
-    printf("SIGTERM : getpid() %d : Killing myself\n", getpid());
+    IFBUG printf("SIGTERM : getpid() %d : Killing myself\n", getpid()); ENDBUG
     raise(SIGKILL);
 }

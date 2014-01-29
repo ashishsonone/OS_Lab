@@ -62,7 +62,6 @@ int main(int argc, char** argv){
             change_dir(args);
         }
         else if(strcmp(args[0], "run") == 0){
-            printf("Runnig executabe\n");
             childpid = fork();
             if(childpid > 0){ // parent
                 IFBUG printf("parent : %d #run: childpid = %d\n ",getpid(), childpid);  ENDBUG
@@ -103,7 +102,7 @@ int main(int argc, char** argv){
 //execute the batch file
 void execute_batch(char ** myargs){
     int i;
-    printf("file name %s\n", myargs[1]);
+    IFBUG printf("execute_batch file name %s\n", myargs[1]); ENDBUG
 	FILE* stream = fopen(myargs[1], "r");  //call a function to get the absolute path of file
 
     if(stream == NULL){
