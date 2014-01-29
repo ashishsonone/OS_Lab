@@ -148,9 +148,9 @@ int findseperator(char ** args, int i){
 }
 
 int parallel(char ** args){
-    int cont = 1;
-    int i = 1;
-    int tok = 1;
+    int cont = 1; //flag whether to continue scanning for commands in token array
+    int i = 1; //last seen args index
+    int tok = 1;//index where command starts
     IFBUG printArgs(args + 2);  ENDBUG
     while(cont){
         i = findseperator(args, i);
@@ -158,12 +158,26 @@ int parallel(char ** args){
             cont = 0;
         }
         args[i] = NULL; //now req arglist is [tok,i]
-        printf("command starts at %d, null at %d\n", tok, i);
+        IFBUG printf("parallel %d : command starts at %d, null at %d\n",getpid(), tok, i); ENDBUG
         /*  */
         execute_command_parallel(args+tok);
         /*  */
         i++;
         tok = i;
     }
+    //waiting for all child processes to terminate
     wait();
+    while(1){
+        int status;
+        int pid = wait(&status);
+        if(pid == -1){ //error
+            if(errno = ECHILD){ //calling process doesnot have any unwaited children
+                IFBUG printf("parallel %d : No more child waiting can now exit\n", getpid()); ENDBUG
+                break;
+            }
+        }
+        else{
+            IFBUG printf("parallel %d : child with pid %d collected\n", getpid(), pid); ENDBUG
+        }
+    }
 }

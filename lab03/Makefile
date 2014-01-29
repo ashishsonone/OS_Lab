@@ -11,4 +11,5 @@ jash: $(OBJ)
 clean:
 	rm -rf jash
 	rm -rf *.o
+	rm -rf *.out
 
