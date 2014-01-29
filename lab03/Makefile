@@ -1,9 +1,14 @@
 CC=gcc
+DEPS = utils.h
+OBJ = jash.o
 
-jash: jash.c
-	$(CC) -o $@ $^
+%.o : %.c $(DEPS)
+	$(CC) -c -o $@ $< 
+jash: $(OBJ)
+	$(CC) -o $@ $(OBJ)
 
 .PHONY: clean
 clean:
-	rm jash
+	rm -rf jash
+	rm -rf *.o
 

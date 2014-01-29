@@ -7,8 +7,10 @@ void execute_batch(char ** args);
 
 int main(int argc, char** argv){
     //set the SIGINT HANDLER
-    parent();
+    bind_signal(SIGINT, &parent_handler);
+    bind_signal(SIGTERM, &child_handler);
 
+    //initialising the two global variables
     parentpid = getpid();
     childpid = -1; 
 
@@ -45,13 +47,10 @@ int main(int argc, char** argv){
 		strcpy(cmds[numCmds++], input); 
 
 		// Calling the tokenizer function on the input line    
+        IFBUG printf("MAIN LOOP : input is %s\n", input);  ENDBUG
 		args = tokenize(input);	
-        IFBUG printf("tokenize %s\n", input);  ENDBUG
 		// Uncomment to print tokens
-	 
-		for(i=0;args[i]!=NULL;i++){
-			printf("%s\n", args[i]);
-		}
+	    IFBUG printArgs(args);  ENDBUG
 
         /* start interpreting the command tokens */
         if(args[0] == NULL) continue;
@@ -64,19 +63,16 @@ int main(int argc, char** argv){
         }
         else if(strcmp(args[0], "run") == 0){
             printf("Runnig executabe\n");
-            int pid = fork();
-                IFBUG printf("setting childpid ACTUAL.. i am process : %d\n", getpid());  ENDBUG
-            childpid = pid;
-            if(pid > 0){ // parent
-                IFBUG printf("parent run: childpid = %d\n ", childpid);  ENDBUG
-                IFBUG printf("parent run: new child id =%d\n",pid); ENDBUG
-                IFBUG printf("parent run: waiting for child to execute command\n",pid); ENDBUG
-                waitpid(pid, 0, 0); //important for wait so that child doesnt become zombie
+            childpid = fork();
+            if(childpid > 0){ // parent
+                IFBUG printf("parent : %d #run: childpid = %d\n ",getpid(), childpid);  ENDBUG
+                int status;
+                int p = waitpid(childpid, &status, 0);
                 //childpid = -1;
-                IFBUG printf("parent run: jash : child with pid %d returned\n",pid); ENDBUG
+                IFBUG printf("parent : %d #run: jash : child with pid %d returned\n",getpid(),childpid); ENDBUG
             }
             else{ // child
-                IFBUG printf("arg[0] %s\n", args[0]); ENDBUG
+                IFBUG printf("child : %d #run : args - ", getpid()); ENDBUG
                 IFBUG printArgs(args); ENDBUG
                 execute_batch(args);
                 //###  execl(x,x, "dummy1",NULL); //needs path to full executable
@@ -89,7 +85,6 @@ int main(int argc, char** argv){
         else{
             execute_command(args);
             IFBUG printf("returned from execute_command to MAIN\n");  ENDBUG
-            fflush(stdout);
         }
 	}
   
@@ -115,14 +110,14 @@ void execute_batch(char ** myargs){
         printf("Batch file %s could not be opened\n", myargs[1]);
         return;
     }
-	while(!feof(stream)) { 
+	while(!feof(stream)) {
 		char *cmd = (char *)malloc(1000 * sizeof(char));
         char ** args;
 		char *in = fgets(cmd, MAXLINE, stream); //taking input one line at a time
 
 		//Checking for EOF
 		if (in == NULL){
-			if (DEBUG) printf("EOF found\n");
+			IFBUG printf("run EOF found\n"); ENDBUG
             break;
 		}
         //printf("command is %s\n", cmd);
@@ -141,9 +136,6 @@ void execute_batch(char ** myargs){
         else{
             execute_command(args);
         }
-        continue;
-        //free(args);
-        //free malloc
     }
 }
 
