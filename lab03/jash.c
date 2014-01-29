@@ -136,6 +136,7 @@ void execute_batch(char ** myargs){
             execute_command(args);
         }
     }
+    fclose(stream);
 }
 
 
