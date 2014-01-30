@@ -38,11 +38,12 @@ void bind_signal(int signal, sig_handler handler){
 
 void printArgs(char **args){
     int i=0;
-    printf("printing args .. :\n");
+    printf("printing Args .. :");
     while((args[i] != NULL) && i < MAXLINE){
-        printf("\t%s\n", args[i]);
+        printf("\t%s ", args[i]);
         i++;
     }
+    printf("\n");
 }
 /*the tokenizer function takes a string of chars and forms tokens out of it*/
 char ** tokenize(char* input){
