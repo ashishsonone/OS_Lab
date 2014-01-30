@@ -10,11 +10,13 @@
 
 #define MAXLINE 1000
 #define MAXCRONTASK 100
+#define ALARMTIMEOUT 5
 
 //declarations
 void cronfunction(char*);
 int checktime(char*);
 int execute_command_dummy(char**);
+
 
 typedef struct{
     int min;
@@ -23,7 +25,10 @@ typedef struct{
     int mon;
     int wday;
     char **command_tokens;
+    char a;
 } cron_task;
+
+cron_task ** TaskList;  //List of cron tasks GLOBAL
 
 void print_cron_task(cron_task * t){
     printf("min %d, hour %d, mday %d, mon %d, wday %d\t", t->min, t->hour, t->mday, t->mon, t->wday);
@@ -41,23 +46,40 @@ void parse_cron_file(char * filename, cron_task ** TaskList){
 	FILE* fp = fopen(filename,"r");
     int i=0;
 	while (1){
-        cron_task * t = malloc(sizeof(cron_task));
+        //cron_task *t = malloc(sizeof(cron_task));
+       // t->command_tokens = malloc(MAXCRONTASK * sizeof(char**)); 
+        TaskList[i] = malloc(sizeof(cron_task));
+        TaskList[i]->command_tokens = malloc(MAXCRONTASK * sizeof(char**)); 
 		char * in = fgets(input, MAXLINE, fp);				//we are storing the commands in an array
+        //printf("line is %s" , input);
 		if (in == NULL){
 			if (DEBUG) printf("EOF found\n");				// terminate while loop upon ending of file input
             TaskList[i] = NULL;
 			break;
 		}
         char ** tokens = tokenize(input);
-        t->min = get_dot_value(tokens[0]);
-        t->hour = get_dot_value(tokens[1]);
-        t->mday = get_dot_value(tokens[2]);
-        t->mon = get_dot_value(tokens[3]);
-        t->wday = get_dot_value(tokens[4]);
-        t->command_tokens = tokens+5;
-        TaskList[i] = t;
+        printArgs(tokens);
+        TaskList[i]->min = get_dot_value(tokens[0]);
+        TaskList[i]->hour = get_dot_value(tokens[1]);
+        TaskList[i]->mday = get_dot_value(tokens[2]);
+        TaskList[i]->mon = get_dot_value(tokens[3]);
+        TaskList[i]->wday = get_dot_value(tokens[4]);
+        int kj =0;
+        while(tokens[kj] !=NULL){
+            printf("Here\n");
+           TaskList[i]->command_tokens[kj] = malloc(sizeof(char) * 1000);
+           strcpy(TaskList[i]->command_tokens[kj],tokens[kj]);
+
+            kj++;
+        }
+        
+
+        print_cron_task(TaskList[i]); 
         i++;
 	}
+    for(i=0; TaskList[i]!=NULL; i++){
+        print_cron_task(TaskList[i]);
+    }
     fclose(fp);
 }
 
@@ -82,17 +104,45 @@ int check_cron_time(cron_task *task, struct tm * time){
 
 int execute_command_dummy(char** list){
 	char* p;
-	strcpy(p, "lol");
-	printf("%s: ", p);
+    printf("Command Called ");
     printArgs(list);
 }
 
+void  ALARMhandler(int sig)
+{
+    alarm(ALARMTIMEOUT);
+    signal(SIGALRM, SIG_IGN);          /* ignore this signal       */
+    printf("\n\nalarm called\n");
+    time_t * rawtime = malloc(sizeof(time_t));
+    if(rawtime == NULL) {
+        printf("malloc error");
+        return;
+    }
+    struct tm * timeinfo;
+    time (rawtime);
+    timeinfo = localtime (rawtime); //Note pointer to tm struct
+    
+    printf("Curent Time : min %d, hour %d, mday %d, mon %d, wday %d\t", timeinfo->tm_min, timeinfo->tm_hour, timeinfo->tm_mday, timeinfo->tm_mon, timeinfo->tm_wday);
+
+    int i;
+    for(i=0; TaskList[i]!=NULL;i++){
+        //print_cron_task(TaskList[i]);
+        if(check_cron_time(TaskList[i], timeinfo) == 1){
+            execute_command_parallel(TaskList[i]->command_tokens + 5);
+        }
+    }
+    signal(SIGALRM, ALARMhandler);     /* reinstall the handler    */
+}
+
+
 int main(int argc, char** argv){
+    /* register for alaram handler */
+    signal(SIGALRM, ALARMhandler);
+    /* END */
     printf("dot value : %d\n", get_dot_value("0"));
-    cron_task ** TaskList = malloc(MAXCRONTASK * sizeof(cron_task*));
-    parse_cron_file("cron.txt", TaskList);
+    TaskList = malloc(MAXCRONTASK * sizeof(cron_task*));
     int i=0;
-    printf("printing tasklist\n");
+    /*printf("printing tasklist\n");
     for(i=0; TaskList[i]!=NULL; i++){
         print_cron_task(TaskList[i]);
     }
@@ -102,12 +152,8 @@ int main(int argc, char** argv){
       time (&rawtime);
       timeinfo = localtime (&rawtime); //Note pointer to tm struct
       printf("Comparing with cron_task result %d" ,check_cron_time(TaskList[0], timeinfo)); 
-    return 0;
-}
-/*
-	//Setting the signal interrupt to its default function. 
-	signal(SIGINT, SIG_DFL);
 
+      */
 	//Allocating space to store the previous commands.
 	int numCmds = 0;
 	char **cmds = (char **)malloc(1000 * sizeof(char *));
@@ -118,7 +164,6 @@ int main(int argc, char** argv){
 	char** tokens;
 
 	int notEOF = 1;
-	int i;
 
 	FILE* stream = stdin;
 
@@ -154,8 +199,6 @@ int main(int argc, char** argv){
 			}
 		} 
 	}
-  
-  
 	printf("Print and deallocate %s\n", tokens[0]);
 	// Freeing the allocated memory	
 	for(i=0;tokens[i]!=NULL;i++){
@@ -165,62 +208,13 @@ int main(int argc, char** argv){
 	return 0;
 }
 
-
 void cronfunction(char* filename){
-	int pid;
-	int cmds;
-	cmds = 0;
-	char** commands = (char **)malloc(1000 * sizeof(char *)); ;
-	char input[MAXLINE];
-	char * in;
-	printf ("come on let me in i am BURning out here \n");
-	FILE* fp = fopen(filename,"r");
-	while (1){
-		in = fgets(input, MAXLINE, fp);				//we are storing the commands in an array
-		if (in == NULL){
-			if (DEBUG) printf("EOF found\n");				// terminate while loop upon ending of file input
-			break;
-		}
-		
-		commands[cmds] = (char *)malloc(sizeof(input));
-		strcpy(commands[cmds++], input); 								// copying commands in commands array, 
-
-	}
-	// we have stored all the commands in the commands character arrray
-	printf ("come on let me in i am freezing put here \n");
-	
-	while(1){
-		sleep(2);     // sleeping for a minute
-		int i = 0;	// total number if commands;
-		while (i < cmds){
-			int state = checktime(commands[i]);				// for each command check whether its time to run it
-			
-				printf("hey there i am free, %d\n", state);
-				if (state == 1){
-				pid = fork();							// if command is to be run at present, create a child and run it
-				if (pid == 0){
-					// its a child process  
-					// now run the commands and exit
-					// execute_command(char* command, char ** arglist);
-					char** tokens;     /// now we apply the toeknize function
-					tokens = tokenize(commands[i]);
-					tokens = tokens + 5;
-					printf("hey there i am inside please help, \n");
-					
-					printf("lets get down to businesss, \n");
-					//strcpy(arglist[k+1], "\0");
-					execute_command_dummy(tokens+5);
-					printf("this is the end, \n");
-					exit(0);
-					
-
-				}
-
-			}
-			i++;   /// the outer while loop with an i
-		}		
-
-
-	}
+    parse_cron_file(filename, TaskList);
+    printf("printing tasklist\n");
+    int i;
+    for(i=0; TaskList[i]!=NULL; i++){
+        print_cron_task(TaskList[i]);
+    }
+    alarm(2);
+    while(1);
 }
-*/

@@ -1,3 +1,4 @@
-1 * * * * ls -l
-49 * 29 * * pwd
-1 * * 12 * echo "hello world"
+52 * * * * ls -l
+9 21 30 0 * echo surpassedsurpassedsurpassed
+* * * 2 * ls -l
+* 21 30 0 * echo surpassedsurpassedsurpassed
