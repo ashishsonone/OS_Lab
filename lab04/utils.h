@@ -192,7 +192,7 @@ int execute_command_parallel(char **args){
 
 void parent_handler(int sig, siginfo_t *siginfo, void *context)
 {
-    IFBUG printf("SIGINT getpid() %d parentpid %d childpid %d\n",getpid(), parentpid,childpid);  ENDBUG
+    IFBUG printf("SIGINT getpid() %d parentpid %d childpid %d\n",getpid(), parentpid,childpid); ENDBUG
 
     if(getpid() == parentpid){
         if(childpid != -1 && childpid!=0){
@@ -432,9 +432,11 @@ int run_jash_commands(char ** args){
             }
             else{
                 printf("Background pid : %d\n", childpid);
+                childpid = -1;
             }
         }
         else{ // child
+            signal(SIGINT, SIG_IGN);
             execute_batch(args);
             exit(0);
         }
@@ -448,9 +450,11 @@ int run_jash_commands(char ** args){
             }
             else{
                 printf("Background pid : %d\n", childpid);
+                childpid = -1;
             }
         }
         else{ // child
+            signal(SIGINT, SIG_IGN);
             parallel(args);
             exit(0);
         }
@@ -464,9 +468,11 @@ int run_jash_commands(char ** args){
             }
             else{
                 printf("Background pid : %d\n", childpid);
+                childpid = -1;
             }
         }
         else{ // child
+            signal(SIGINT, SIG_IGN);
             execute_pipe(args);
             exit(0);
         }
@@ -480,9 +486,11 @@ int run_jash_commands(char ** args){
             }
             else{
                 printf("Background pid : %d\n", childpid);
+                childpid = -1;
             }
         }
         else{ // child
+            signal(SIGINT, SIG_IGN);
             file_inout_parser(args);
             exit(0);
         }
