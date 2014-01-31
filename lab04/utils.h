@@ -20,6 +20,25 @@ int childpid;
 int parentpid;
 
 
+//function declarations 
+void bind_signal(int signal, sig_handler handler);
+void printArgs(char **args);
+char ** tokenize(char* input);
+int change_dir(char ** args);
+int execute_command(char **args);
+int execute_command_parallel(char **args);
+void parent_handler(int sig, siginfo_t *siginfo, void *context);
+void child_handler(int sig, siginfo_t *siginfo, void *context);
+int find_pipe_symbol(char ** args);
+void execute_pipe(char ** args);
+int file_inout_parser(char** tokens);
+int findseperator(char ** args, int i);
+int parallel(char ** args);
+void execute_batch(char ** myargs);
+int run_jash_commands(char ** args);
+
+//function definitions
+
 void bind_signal(int signal, sig_handler handler){
     //printf ("this is the parent, with id %d\n", (int) getpid ());
     struct sigaction act;
@@ -194,6 +213,20 @@ void child_handler(int sig, siginfo_t *siginfo, void *context)
     raise(SIGKILL);
 }
 
+/**** background symbol "&" checker  and sets it to NULL *******/
+//return 1 on success(i.e if it is background) , 0 on failure(waitable)
+find_if_background(char **args){
+    int i;
+    for(i=0;args[i] != NULL; i++){
+        if(strcmp(args[i], "&") == 0){
+            args[i] = NULL;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/******* pipe command handling ******************/
 int find_pipe_symbol(char ** args){
     int i;
     for(i=0;args[i] != NULL; i++){
@@ -242,6 +275,8 @@ void execute_pipe(char ** args){
     }
 }
 
+
+/*** general run exectable command supporting < > >> etc ********/
 
 int file_inout_parser(char** tokens){                   // this function checks for input and output files
     //char** tokens = tokenize(command);                    // the tokens are for the input commands
@@ -303,5 +338,153 @@ int file_inout_parser(char** tokens){                   // this function checks 
     else {
         int status;
         waitpid(newpid, &status, 0);
+    }
+}
+
+
+/****PARALLEL JASH COMMAND ********/
+int findseperator(char ** args, int i){
+    while(args[i]!=NULL){
+        if(strcmp(args[i], ":::") == 0) return i;
+        i++;
+    }
+    return i;
+}
+
+int parallel(char ** args){
+    int cont = 1; //flag whether to continue scanning for commands in token array
+    int i = 1; //last seen args index
+    int tok = 1;//index where command starts
+    IFBUG printArgs(args + 2);  ENDBUG
+    while(cont){
+        i = findseperator(args, i);
+        if(args[i] == NULL){
+            cont = 0;
+        }
+        args[i] = NULL; //now req arglist is [tok,i]
+        IFBUG printf("parallel %d : command starts at %d, null at %d\n",getpid(), tok, i); ENDBUG
+        /*  */
+        execute_command_parallel(args+tok);
+        /*  */
+        i++;
+        tok = i;
+    }
+    //waiting for all child processes to terminate
+    while(1){
+        int status;
+        int pid = wait(&status);
+        if(pid == -1){ //error
+            if(errno = ECHILD){ //calling process doesnot have any unwaited children
+                IFBUG printf("parallel %d : No more child waiting can now exit\n", getpid()); ENDBUG
+                break;
+            }
+        }
+        else{
+            IFBUG printf("parallel %d : child with pid %d collected\n", getpid(), pid); ENDBUG
+        }
+    }
+}
+
+//execute the batch file given using "run" command
+void execute_batch(char ** myargs){
+    int i;
+    IFBUG printf("execute_batch file name %s\n", myargs[1]); ENDBUG
+	FILE* stream = fopen(myargs[1], "r");  //call a function to get the absolute path of file
+
+    if(stream == NULL){
+        printf("Batch file %s could not be opened\n", myargs[1]);
+        return;
+    }
+	while(!feof(stream)) {
+		char *cmd = (char *)malloc(1000 * sizeof(char));
+        char ** args;
+		char *in = fgets(cmd, MAXLINE, stream); //taking input one line at a time
+
+		//Checking for EOF
+		if (in == NULL){
+			IFBUG printf("run EOF found\n"); ENDBUG
+            break;
+		}
+        //printf("command is %s\n", cmd);
+        args = tokenize(cmd);
+        
+        run_jash_commands(args);
+    }
+    fclose(stream);
+}
+
+int run_jash_commands(char ** args){
+    /* start interpreting the command tokens */
+    int BACKFLAG = find_if_background(args);
+    if(strcmp(args[0], "exit") == 0){
+        printf("Bye!\n");
+        killpg(getpgrp(), SIGTERM);
+    }
+    else if(strcmp(args[0], "cd") == 0){
+        change_dir(args);
+    }
+    else if(strcmp(args[0], "run") == 0){
+        childpid = fork();
+        if(childpid > 0){ // parent
+            int status;
+            if(BACKFLAG == 0){
+                int p = waitpid(childpid, &status, 0);
+            }
+            else{
+                printf("Background pid : %d\n", childpid);
+            }
+        }
+        else{ // child
+            execute_batch(args);
+            exit(0);
+        }
+    }
+    else if(strcmp(args[0], "parallel") == 0){
+        childpid = fork();
+        if(childpid > 0){ // parent
+            int status;
+            if(BACKFLAG == 0){
+                int p = waitpid(childpid, &status, 0);
+            }
+            else{
+                printf("Background pid : %d\n", childpid);
+            }
+        }
+        else{ // child
+            parallel(args);
+            exit(0);
+        }
+    }
+    else if(find_pipe_symbol(args) > 0){
+        childpid = fork();
+        if(childpid > 0){ // parent
+            int status;
+            if(BACKFLAG == 0){
+                int p = waitpid(childpid, &status, 0);
+            }
+            else{
+                printf("Background pid : %d\n", childpid);
+            }
+        }
+        else{ // child
+            execute_pipe(args);
+            exit(0);
+        }
+    }
+    else{ //execute the executable with redirection symbols
+        childpid = fork();
+        if(childpid > 0){ // parent
+            int status;
+            if(BACKFLAG == 0){
+                int p = waitpid(childpid, &status, 0);
+            }
+            else{
+                printf("Background pid : %d\n", childpid);
+            }
+        }
+        else{ // child
+            file_inout_parser(args);
+            exit(0);
+        }
     }
 }

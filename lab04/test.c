@@ -1,18 +1,15 @@
 #include "utils.h"
 
 int main(){
-    char * x = malloc(1000 * sizeof(char));
-    strcpy(x, "ls -l a a bc");
-    //printf("%s" , x);
-    char ** y = tokenize(x);
+    char * x =(char *) malloc(1000 * sizeof(char));
+    strcpy(x, "ls -l | ls -l \n");
     int i;
-    for(i=0;y[i]!=NULL; i++){
-        printf("%s ", y[i]);
-    }
-    printf("%s \n", y[i]);
-    return 0;
-    //printArgs(y);
+    printf("%s" , x);
+    char **y;
+    y = tokenize(x);
+    printArgs(y);
     printf("symbol at %d", find_pipe_symbol(y));
+    i = find_pipe_symbol(y);
     y[i]= NULL;
     printf("%s\n", y[i+1]);
     printArgs(y+i+1);
