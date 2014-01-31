@@ -8,7 +8,6 @@
 #include <sys/stat.h> 
 #include <fcntl.h>
 
-
 #define MAXLINE 1000
 #define DEBUG 0
 #define IFBUG if(DEBUG==1){
@@ -41,7 +40,7 @@ void bind_signal(int signal, sig_handler handler){
 void printArgs(char **args){
     int i=0;
     printf("printing Args .. :");
-    while((args[i] != NULL) && i < MAXLINE){
+    while((args[i] != NULL)){
         printf("\t%s ", args[i]);
         i++;
     }
@@ -97,7 +96,7 @@ char ** tokenize(char* input){
 			strcpy(tokens[tokenNo++], token);
 		}
 	}
-
+	
 	return tokens;
 }
 
@@ -195,6 +194,55 @@ void child_handler(int sig, siginfo_t *siginfo, void *context)
     raise(SIGKILL);
 }
 
+int find_pipe_symbol(char ** args){
+    int i;
+    for(i=0;args[i] != NULL; i++){
+        if(strcmp(args[i], "|") == 0){
+            return i;
+        }
+    }
+    return -1;
+}
+
+void execute_pipe(char ** args){
+    int pos = find_pipe_symbol(args);
+    args[pos] = NULL;
+    int pipefd[2];
+
+    /* get a pipe (buffer and fd pair) from the OS */
+    if (pipe(pipefd)) {
+        fprintf(stderr,"error creating pipe");
+        exit(0);
+    }
+
+    int childpid = fork();
+    if(childpid == -1) {
+        fprintf(stderr,"error forking ");
+        exit(0);
+    }
+    else if(childpid == 0){
+        /* child */
+        close(pipefd[0]); //close read end  
+        dup2(pipefd[1], 1); //writeend => 1
+        close(pipefd[1]);  
+        /* exec ls */
+        execvp(args[0], args);
+        perror(args[0]);
+        exit(0);
+    }
+    else{
+        /* parent */
+        /* do redirections and close the wrong side of the pipe */
+        close(pipefd[1]); //close write end
+        dup2(pipefd[0], 0); //readend => 0 
+        close(pipefd[0]);  
+        execvp(args[pos+1], args+ pos +1);
+        perror(args[pos+1]);
+        exit(0);
+    }
+}
+
+
 int file_inout_parser(char** tokens){                   // this function checks for input and output files
     //char** tokens = tokenize(command);                    // the tokens are for the input commands
     int flag = 0;                                       // flag keeps track of file input/output operations, 
@@ -205,27 +253,35 @@ int file_inout_parser(char** tokens){                   // this function checks 
     int inputfd;                                        // these are the fiel descriptors 
     int outputfd;
     int i = 0;                                          // i : index for iterating in the tokens 
-    printf("This is befor asdf sdf  foring \n");
+//    printf("This is befor asdf sdf  foring \n");
     while (tokens[i]!=NULL){
-        if (flag == 1){                                 // '<' found , if current token valid update input_found    
+        if (flag ==1 && input_found != 0){
+            fprintf(stderr, "Invalid command format.\n the command contains more than 1 input tag : '<'.\n");
+            break;
+        }
+        else if (flag ==2 && output_found != 0){
+            fprintf(stderr, "Invalid command format.\n the command contains more than 1 output tag : '>' .\n");
+            break;
+        }
+        else if (flag == 1){                                 // '<' found , if current token valid update input_found    
             input_found = i;                            //  
-        flag = 0;
-    }       
+            flag = 0;
+        }       
         else if (flag == 2){                            // ' > ' found , if current token valid outpu_found updated
             output_found = i;
             flag = 0;
-    }
+        }
         else if (strcmp(tokens[i],"<") == 0){
             flag = 1;
             tokens[i] = NULL;
-    }
+        }
         else if (strcmp(tokens[i],">") == 0){
             flag = 2;
             tokens[i] = NULL;
         }
         i++;
     }
-    printf("This is befor foring \n");
+
     newpid = fork();
     if (newpid == 0){
         if (flag != 0){                                     // ALERT!!!! check if input_found + output_found was invalid
@@ -233,20 +289,28 @@ int file_inout_parser(char** tokens){                   // this function checks 
             return -1;
         }
         else if (input_found != 0 && output_found != 0){
-            inputfd = open(tokens[input_found], O_RDONLY );                  // file descriptor : read only for input
-            outputfd = open(tokens[output_found], O_WRONLY | O_CREAT, 0640);                // file descriptor : write only for output
+            inputfd = open(tokens[input_found], O_RDONLY);                         // file descriptor : read only for input
+            if (inputfd == -1){
+                fprintf(stderr, "File : ' %s ' not found.", tokens[input_found]);
+                return -1;
+            }
+            outputfd = open(tokens[output_found], O_WRONLY|O_CREAT,0640);          // file descriptor : write only for output
             dup2(inputfd,0);
             dup2(outputfd,1);
         }
         else if (input_found != 0){
-            inputfd = open(tokens[input_found], O_RDONLY);                  // file descriptor : read only for input
+            inputfd = open(tokens[input_found], O_RDONLY);                         // file descriptor : read only for input
+            if (inputfd == -1){
+                fprintf(stderr, "File : ' %s ' not found.", tokens[input_found]);
+                return -1;
+            }
             dup2(inputfd,0);
         }
         else if (output_found != 0){
-            outputfd = open(tokens[output_found], O_WRONLY | O_CREAT, 0640);                // file descriptor : write only for output
+            outputfd = open(tokens[output_found], O_WRONLY|O_CREAT,0640);          // file descriptor : write only for output
             dup2(outputfd,1);
         }
-        printf("This is before execvp \n");
+ //       printf("This is before execvp \n");
 
         execvp(tokens[0], tokens);
 
