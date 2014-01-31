@@ -66,7 +66,7 @@ char ** tokenize(char* input){
 			if (doubleQuotes == 0){
 				token[tokenIndex] = '\0';
 				if (tokenIndex != 0){
-					tokens[tokenNo] = (char*)malloc(sizeof(token));
+                    tokens[tokenNo] = (char*)malloc(1000 * sizeof(char));
 					strcpy(tokens[tokenNo++], token);
 					tokenIndex = 0; 
 				}
@@ -78,7 +78,7 @@ char ** tokenize(char* input){
 		else if (readChar == ' ' || readChar == '\n' || readChar == '\t'){
 			token[tokenIndex] = '\0';
 			if (tokenIndex != 0){
-				tokens[tokenNo] = (char*)malloc(sizeof(token));
+				tokens[tokenNo] = (char*)malloc(1000 * sizeof(char));
 				strcpy(tokens[tokenNo++], token);
 				tokenIndex = 0; 
 			}
@@ -91,7 +91,7 @@ char ** tokenize(char* input){
 	if (doubleQuotes == 1){
 		token[tokenIndex] = '\0';
 		if (tokenIndex != 0){
-			tokens[tokenNo] = (char*)malloc(sizeof(token));
+            tokens[tokenNo] = (char*)malloc(sizeof(token));
 			strcpy(tokens[tokenNo++], token);
 		}
 	}
