@@ -81,8 +81,25 @@ int main(int argc, char** argv){
         else if(strcmp(args[0], "parallel") == 0){
             parallel(args);
         }
+        else if(find_pipe_symbol(args) > 0){
+            childpid = fork();
+            if(childpid > 0){ // parent
+                IFBUG printf("parent : %d #run: childpid = %d\n ",getpid(), childpid);  ENDBUG
+                int status;
+                int p = waitpid(childpid, &status, 0);
+                //childpid = -1;
+                IFBUG printf("parent : %d #run: jash : child with pid %d returned\n",getpid(),childpid); ENDBUG
+            }
+            else{ // child
+                IFBUG printf("child : %d #run : args - ", getpid()); ENDBUG
+                IFBUG printArgs(args); ENDBUG
+                execute_pipe(args);
+                //###  execl(x,x, "dummy1",NULL); //needs path to full executable
+                exit(0);
+            }
+        }
         else{
-            execute_command(args);
+            file_inout_parser(args);
             IFBUG printf("returned from execute_command to MAIN\n");  ENDBUG
         }
 	}
