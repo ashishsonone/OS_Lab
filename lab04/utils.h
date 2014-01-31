@@ -553,3 +553,10 @@ int run_jash_commands(char ** args){
         }
     }
 }
+void free2darray(char** twodarray){
+    int i = 0;
+    while (twodarray[i] != NULL){
+        free(twodarray[i]);
+    }
+    free(twodarray);
+}
