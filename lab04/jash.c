@@ -99,7 +99,7 @@ int main(int argc, char** argv){
             }
         }
         else{
-            execute_command(args);
+            file_inout_parser(args);
             IFBUG printf("returned from execute_command to MAIN\n");  ENDBUG
         }
 	}
