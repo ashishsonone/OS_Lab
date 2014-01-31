@@ -39,7 +39,7 @@ void bind_signal(int signal, sig_handler handler){
 void printArgs(char **args){
     int i=0;
     printf("printing Args .. :");
-    while((args[i] != NULL) && i < MAXLINE){
+    while((args[i] != NULL)){
         printf("\t%s ", args[i]);
         i++;
     }
@@ -191,4 +191,52 @@ void child_handler(int sig, siginfo_t *siginfo, void *context)
 {
     IFBUG printf("SIGTERM : getpid() %d : Killing myself\n", getpid()); ENDBUG
     raise(SIGKILL);
+}
+
+int find_pipe_symbol(char ** args){
+    int i;
+    for(i=0;args[i] != NULL; i++){
+        if(strcmp(args[i], "|") == 0){
+            return i;
+        }
+    }
+    return -1;
+}
+
+void execute_pipe(char ** args){
+    int pos = find_pipe_symbol(args);
+    args[pos] = NULL;
+    int pipefd[2];
+
+    /* get a pipe (buffer and fd pair) from the OS */
+    if (pipe(pipefd)) {
+        fprintf(stderr,"error creating pipe");
+        exit(0);
+    }
+
+    int childpid = fork();
+    if(childpid == -1) {
+        fprintf(stderr,"error forking ");
+        exit(0);
+    }
+    else if(childpid == 0){
+        /* child */
+        close(pipefd[0]); //close read end  
+        dup2(pipefd[1], 1); //writeend => 1
+        close(pipefd[1]);  
+        /* exec ls */
+        execvp(args[0], args);
+        perror(args[0]);
+        exit(0);
+    }
+    else{
+        /* parent */
+        /* do redirections and close the wrong side of the pipe */
+        close(pipefd[1]); //close write end
+        dup2(pipefd[0], 0); //readend => 0 
+        close(pipefd[0]);  
+        execvp(args[pos+1], args+ pos +1);
+        perror(args[pos+1]);
+        exit(0);
+    }
 }
