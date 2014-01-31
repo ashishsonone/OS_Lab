@@ -233,8 +233,8 @@ int file_inout_parser(char** tokens){                   // this function checks 
             return -1;
         }
         else if (input_found != 0 && output_found != 0){
-            inputfd = open(tokens[input_found], O_RDONLY);                  // file descriptor : read only for input
-            outputfd = open(tokens[output_found], O_WRONLY);                // file descriptor : write only for output
+            inputfd = open(tokens[input_found], O_RDONLY );                  // file descriptor : read only for input
+            outputfd = open(tokens[output_found], O_WRONLY | O_CREAT, 0640);                // file descriptor : write only for output
             dup2(inputfd,0);
             dup2(outputfd,1);
         }
@@ -243,7 +243,7 @@ int file_inout_parser(char** tokens){                   // this function checks 
             dup2(inputfd,0);
         }
         else if (output_found != 0){
-            outputfd = open(tokens[output_found], O_WRONLY);                // file descriptor : write only for output
+            outputfd = open(tokens[output_found], O_WRONLY | O_CREAT, 0640);                // file descriptor : write only for output
             dup2(outputfd,1);
         }
         printf("This is before execvp \n");
