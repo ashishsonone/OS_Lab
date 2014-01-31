@@ -1,4 +1,3 @@
 52 * * * * pwd
 9 21 30 0 * echo surpassedsurpassedsurpassed
 * * * 3 * ls
-* * * * 6 ./infi.out

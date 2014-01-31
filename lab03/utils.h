@@ -219,7 +219,7 @@ void parse_cron_file(char * filename){
 	while (!feof(fp)){
         char * input = malloc(MAXLINE* sizeof(char));
 		char * in = fgets(input, MAXLINE, fp);				//we are storing the commands in an array
-        if(in == NULL) {printf("null found\n");break;}
+        if(in == NULL) {break;}
         Commands[i] = input;
         i++;
 	}
@@ -259,7 +259,7 @@ void  ALARMhandler(int sig)
     time (rawtime);
     timeinfo = localtime (rawtime); //Note pointer to tm struct
     
-    printf("Curent Time : min %d, hour %d, mday %d, mon %d, wday %d\t", timeinfo->tm_min, timeinfo->tm_hour, timeinfo->tm_mday, timeinfo->tm_mon, timeinfo->tm_wday);
+    //printf("Curent Time : min %d, hour %d, mday %d, mon %d, wday %d\t", timeinfo->tm_min, timeinfo->tm_hour, timeinfo->tm_mday, timeinfo->tm_mon, timeinfo->tm_wday);
     int i;
     for(i=0; Commands[i] != NULL;i++){
         char ** t = tokenize(Commands[i]);
@@ -282,7 +282,6 @@ void  ALARMhandler(int sig)
 }
 
 void cronfunction(char * filename){
-    printf("hello \n");
     signal(SIGALRM, ALARMhandler);
     Commands = malloc(MAXCRONTASK * sizeof(char *));
     parse_cron_file(filename);
