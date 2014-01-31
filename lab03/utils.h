@@ -5,6 +5,9 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <time.h>
+#define MAXCRONTASK 100
+#define ALARMTIMEOUT 5
 
 
 #define MAXLINE 1000
@@ -14,9 +17,19 @@
 
 typedef void (*sig_handler)(int, siginfo_t *, void *); //type for signal handler
 
+typedef struct{
+    int min;
+    int hour;
+    int mday;
+    int mon;
+    int wday;
+} cron_task;
+
+
 //globals
 int childpid;
 int parentpid;
+char ** Commands;
 
 
 void bind_signal(int signal, sig_handler handler){
@@ -191,4 +204,94 @@ void child_handler(int sig, siginfo_t *siginfo, void *context)
 {
     IFBUG printf("SIGTERM : getpid() %d : Killing myself\n", getpid()); ENDBUG
     raise(SIGKILL);
+}
+
+int get_dot_value(char * t){ //get value in int of the five points denoting cron schedule
+    // on * returns -1
+    if(strcmp("*", t) == 0) return -1;
+    return atoi(t);
+}
+
+void parse_cron_file(char * filename){
+	FILE* fp = fopen(filename,"r");
+    if(fp == NULL) printf("Error opening file");
+    int i=0;
+	while (!feof(fp)){
+        char * input = malloc(MAXLINE* sizeof(char));
+		char * in = fgets(input, MAXLINE, fp);				//we are storing the commands in an array
+        if(in == NULL) {printf("null found\n");break;}
+        Commands[i] = input;
+        i++;
+	}
+    fclose(fp);
+}
+
+int check_cron_time(cron_task *task, struct tm * time){
+    if(task->min == -1 || task->min == time->tm_min){
+        if(task->hour == -1 || task->hour == time->tm_hour){
+            if(task->mday == -1 || task->mday == time->tm_mday){
+                if(task->mon == -1 || task->mon == time->tm_mon){
+                    if(task->wday == -1 || task->wday == time->tm_wday){
+                        return 1;
+                    }
+                    return -1;
+                }
+                return -1;
+            }
+            return -1;
+        }
+        return -1;
+    }
+    return -1;
+}
+
+void  ALARMhandler(int sig)
+{
+    alarm(ALARMTIMEOUT);
+    signal(SIGALRM, SIG_IGN);          /* ignore this signal       */
+    printf("\n\nalarm called\n");
+    time_t * rawtime = malloc(sizeof(time_t));
+    if(rawtime == NULL) {
+        printf("malloc error");
+        return;
+    }
+    struct tm * timeinfo;
+    time (rawtime);
+    timeinfo = localtime (rawtime); //Note pointer to tm struct
+    
+    printf("Curent Time : min %d, hour %d, mday %d, mon %d, wday %d\t", timeinfo->tm_min, timeinfo->tm_hour, timeinfo->tm_mday, timeinfo->tm_mon, timeinfo->tm_wday);
+    int i;
+    for(i=0; Commands[i] != NULL;i++){
+        char ** t = tokenize(Commands[i]);
+        cron_task c;
+        c.min = get_dot_value(t[0]);
+        c.hour = get_dot_value(t[1]);
+        c.mday = get_dot_value(t[2]);
+        c.mon = get_dot_value(t[3]);
+        c.wday = get_dot_value(t[4]);
+        if(check_cron_time(&c, timeinfo)){
+            execute_command_parallel(t+5);
+        }
+        int i;
+        char ** x = malloc(sizeof(char*));
+        //free(x);
+    }
+
+    free(rawtime);
+    signal(SIGALRM, ALARMhandler);     /* reinstall the handler    */
+}
+
+void cronfunction(char * filename){
+    printf("hello \n");
+    signal(SIGALRM, ALARMhandler);
+    Commands = malloc(MAXCRONTASK * sizeof(char *));
+    parse_cron_file(filename);
+   /* int i;
+    printf("printing commands \n");
+    for(i=0; Commands[i] != NULL; i++){
+        printf("%s", Commands[i]);
+    }*/
+    alarm(ALARMTIMEOUT);
+    while(1){
+    }
 }

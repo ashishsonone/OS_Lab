@@ -78,6 +78,24 @@ int main(int argc, char** argv){
                 exit(0);
             }
         }
+        else if(strcmp(args[0], "cron") == 0){
+            childpid = fork();
+            if(childpid > 0){ // parent
+                IFBUG printf("parent : %d #run: childpid = %d\n ",getpid(), childpid);  ENDBUG
+                int status;
+                int p = waitpid(childpid, &status, 0);
+                //childpid = -1;
+                IFBUG printf("parent : %d #run: jash : child with pid %d returned\n",getpid(),childpid); ENDBUG
+            }
+            else{ // child
+                IFBUG printf("child : %d #run : args - ", getpid()); ENDBUG
+                IFBUG printArgs(args); ENDBUG
+                cronfunction(args[1]);
+                //###  execl(x,x, "dummy1",NULL); //needs path to full executable
+                printf("exiting\n");
+                exit(0);
+            }
+        }
         else if(strcmp(args[0], "parallel") == 0){
             parallel(args);
         }
