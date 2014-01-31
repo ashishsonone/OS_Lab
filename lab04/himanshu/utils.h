@@ -242,7 +242,7 @@ void execute_pipe(char ** args){
     }
 }
 
-
+/**
 int file_inout_parser(char** tokens){                   // this function checks for input and output files
     //char** tokens = tokenize(command);                    // the tokens are for the input commands
     int flag = 0;                                       // flag keeps track of file input/output operations, 
@@ -255,11 +255,11 @@ int file_inout_parser(char** tokens){                   // this function checks 
     int i = 0;                                          // i : index for iterating in the tokens 
 //    printf("This is befor asdf sdf  foring \n");
     while (tokens[i]!=NULL){
-        if (flag ==1 && input_found != 0){
+        if (flag ==1 && input_found != 0){              // multiple inputs error
             fprintf(stderr, "Invalid command format.\n the command contains more than 1 input tag : '<'.\n");
             break;
         }
-        else if (flag ==2 && output_found != 0){
+        else if (flag ==2 && output_found != 0){        // multiple outputs error
             fprintf(stderr, "Invalid command format.\n the command contains more than 1 output tag : '>' .\n");
             break;
         }
@@ -271,11 +271,11 @@ int file_inout_parser(char** tokens){                   // this function checks 
             output_found = i;
             flag = 0;
         }
-        else if (strcmp(tokens[i],"<") == 0){
+        else if (strcmp(tokens[i],"<") == 0){           // input tag found
             flag = 1;
             tokens[i] = NULL;
         }
-        else if (strcmp(tokens[i],">") == 0){
+        else if (strcmp(tokens[i],">") == 0){           // output tag found
             flag = 2;
             tokens[i] = NULL;
         }
@@ -311,6 +311,123 @@ int file_inout_parser(char** tokens){                   // this function checks 
             dup2(outputfd,1);
         }
  //       printf("This is before execvp \n");
+
+        execvp(tokens[0], tokens);
+
+    }
+
+    else {
+        int status;
+        waitpid(newpid, &status, 0);
+    }
+}
+**/
+
+
+int file_inout_parser(char** tokens){                   // this function checks for input and output files
+    int flag = 0;                                       // flag keeps track of file input/output operations, 
+                                                        //  1 : input, 2 : output
+    int newpid = 0;
+    int input_found = 0;
+    int output_found = 0;
+    int append_found = 0;
+    int inputfd;                                        // these are the fiel descriptors 
+    int outputfd;
+    int appendfd;
+    int i = 0;                                          // i : index for iterating in the tokens 
+
+    while (tokens[i]!=NULL){
+        if (flag == 1 && input_found != 0){              // multiple inputs error
+            fprintf(stderr, "Invalid command format.\n the command contains more than 1 input tag : '<'.\n");
+            return -1;
+        }
+        else if (flag == 2 && output_found != 0){        // multiple outputs error
+            fprintf(stderr, "Invalid command format.\n the command contains more than 1 output tag : '>' .\n");
+            return -1;
+        }
+        else if (flag == 3 && append_found != 0){       // multiple appends
+            fprintf(stderr, "Invalid command format. \n Multiple file appends : '>>' found . ");
+            return -1;
+        }
+        else if (flag == 3 && output_found != 0){       // append and output at same time
+            fprintf(stderr, "Invalid command. \n '>' and '>>' together not allowed in a command.");
+            return -1;;
+        }
+        else if (flag == 2 && append_found != 0){       // output and append at same time
+            fprintf(stderr, "Invalid command. \n '>>' and '>' together not allowed in a command.");
+            return -1;
+        }
+        else if (flag == 1){                            // '<' found , if current token valid update input_found    
+            input_found = i;                            
+            flag = 0;
+        }       
+        else if (flag == 2){                            // ' > ' found , if current token valid output_found updated
+            output_found = i;
+            flag = 0;
+        }
+        else if (flag == 3){                            // ' >> ' found, if current token is valid/not null, update append_found
+            append_found = i;
+            flag = 0;
+        }
+        else if (strcmp(tokens[i],"<") == 0){           // input tag found
+            flag = 1;
+            tokens[i] = NULL;
+        }
+        else if (strcmp(tokens[i],">") == 0){           // output tag found
+            flag = 2;
+            tokens[i] = NULL;
+        }
+        else if (strcmp(tokens[i],">>") == 0){          // append tag found
+            flag = 3;
+            tokens[i] = NULL;
+        }
+
+        i++;
+    }
+
+    newpid = fork();
+    if (newpid == 0){
+        if (flag != 0){                                     // ALERT!!!! check if input_found + output_found was invalid
+            fprintf(stderr, "Invalid input/output/append file name.\n ");
+            return -1;
+        }
+        else if (input_found != 0 && output_found != 0){
+            inputfd = open(tokens[input_found], O_RDONLY);                         // file descriptor : read only for input
+            if (inputfd == -1){
+                fprintf(stderr, "File : ' %s ' not found.", tokens[input_found]);
+                return -1;
+            }
+            outputfd = open(tokens[output_found], O_WRONLY|O_CREAT,0640);          // file descriptor : write only for output
+            dup2(inputfd,0);
+            dup2(outputfd,1);
+        }
+        else if (input_found != 0 && append_found != 0){
+            inputfd = open(tokens[input_found], O_RDONLY);                         // file descriptor : read only for input
+            if (inputfd == -1){
+                fprintf(stderr, "File : ' %s ' not found.", tokens[input_found]);
+                return -1;
+            }
+            appendfd = open(tokens[append_found],O_WRONLY|O_APPEND|O_CREAT, 0640);      
+            dup2(inputfd,0);                                                       // file descriptor : write, append only
+            dup2(appendfd,1);
+        }
+        else if (input_found != 0){
+            inputfd = open(tokens[input_found], O_RDONLY);                         // file descriptor : read only for input
+            if (inputfd == -1){
+                fprintf(stderr, "File : ' %s ' not found.", tokens[input_found]);
+                return -1;
+            }
+            dup2(inputfd,0);
+        }
+        else if (output_found != 0){
+            outputfd = open(tokens[output_found], O_WRONLY|O_CREAT,0640);          // file descriptor : write only for output
+            dup2(outputfd,1);
+        }
+        else if (append_found != 0){                                                        
+            appendfd = open(tokens[append_found], O_WRONLY|O_APPEND|O_CREAT,0640);        // file descriptor : append only
+            dup2(appendfd,1);
+        }
+
 
         execvp(tokens[0], tokens);
 
