@@ -31,10 +31,13 @@ public:
 
 	priority_queue<PCB, vector<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
 	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
+	bool preemption;
+	int currprocess_start_time;
 
 private:
 	int addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
 	Event schedule(int pid);
+	void save_state();
 };
