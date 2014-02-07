@@ -5,12 +5,12 @@
 using namespace std;
 
 
-enum{
+enum process_state{
 	ready_state,
 	block_state
-} process_state;
+} ;
 
-struct {
+struct PCB {
 	int pid;
 	int priority;
 	process_state state;
@@ -18,7 +18,7 @@ struct {
 	friend bool operator <(const PCB& lhs, const PCB& rhs){
          return lhs.priority < rhs.priority;
     }
-} PCB;
+} ;
 
 
 class schedulerLevel;
@@ -38,6 +38,6 @@ private:
 	int addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
-	Event schedule(int pid);
+	Event schedule();
 	void save_state();
 };
