@@ -4,7 +4,6 @@
 #include <list>
 #include <vector>
 
-static int GLOBALCLOCK = 0;
 using namespace std;
 struct process_phase{
 	int iterations;

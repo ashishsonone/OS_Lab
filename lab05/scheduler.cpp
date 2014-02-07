@@ -1,5 +1,6 @@
 #include "scheduler.h"
 
+extern int GLOBALCLOCK;
 
 /**
 
@@ -32,6 +33,9 @@ scheduler::scheduler()
 	preemption = 0;
 }
 
+scheduler::~scheduler(){
+}
+
 int scheduler::addProcess(process newProcess){
 	PCB newPCB;
 	newPCB.pid = newProcess.p_id;
@@ -61,13 +65,17 @@ int scheduler::addProcess(process newProcess){
 Event scheduler::schedule(){
 	Event start_IO;
 	start_IO.p_id = -1;
-	if (preemption == 0){
+    //cout << "INside Event Scheduler ready pcb list size is " << ready_PCBList.size() <<endl;
+	if (preemption == 0 && ready_PCBList.size()>0){
+        //cout << "GLOBAL TIME " << GLOBALCLOCK <<endl;
 		currprocess_start_time = GLOBALCLOCK;
 		start_IO.p_id = ready_PCBList.top().pid;
 		start_IO.type = Start_IO;
 		start_IO.time = GLOBALCLOCK + ready_PCBList.top().Phases.front().cpu_time;
+		//cout << "Start cpu time " <<  ready_PCBList.top().Phases.front().cpu_time <<endl;
+        cout << "Scheduled new process with"; print_event(start_IO);
 		return start_IO;
-	}	
+	}
 	else {
 		return start_IO;
 	}
@@ -77,13 +85,18 @@ Event scheduler::schedule(){
 Event scheduler::IO_start(){
 
 	int clock = GLOBALCLOCK;												// current global time
+    //cout << "Inside iOstart : GLOBALCLOCK "  << GLOBALCLOCK <<endl;
+    //cout << "Inside iOstart : Delta " << ready_PCBList.top().Phases.front().io_time << endl;
 	int delta = ready_PCBList.top().Phases.front().io_time;					// new event creation of I/O interrupt type for iostart function
+    //cout << "Inside iOstart : Delta " << delta << endl;
 	clock = clock + delta;
 	Event IO_interrupt;
 	IO_interrupt.type = End_IO;
 	IO_interrupt.p_id = ready_PCBList.top().pid;
 	IO_interrupt.time = clock;												// IO_interrupt is defined, and this function returns this event to the event handler
+    //cout << "Inside iOstart : returning event time clock"  << clock <<endl;
 
+    cout << "ready pcb list size " << ready_PCBList.size() <<endl;
 	PCB blockPCB = ready_PCBList.top();
 	ready_PCBList.pop();
 	currprocess_start_time = GLOBALCLOCK;
@@ -113,7 +126,11 @@ Event scheduler::IO_start(){
 		flag = 1;
 	}
 	
-	if (flag == 1)	blocked_PCBList.push_back(blockPCB);
+	if (flag == 1)	{
+        blocked_PCBList.push_back(blockPCB);
+        cout << "Process with pid : " << blockPCB.pid << endl;
+    }
+    //cout << "Inside iOstart : returning event time "  << IO_interrupt.time <<endl;
 	return IO_interrupt;	
 }
 
@@ -156,17 +173,26 @@ int scheduler::IO_terminate(int p_id){
 
 void scheduler::save_state(){
 	PCB topPCB = ready_PCBList.top();
-	ready_PCBList.pop();
+    //cout << "SAVE STATE io time "<< topPCB.Phases.front().io_time <<endl;
+    cout << "Premeting  process with pid : " << topPCB.pid <<endl;
+
 	int iters = topPCB.Phases.front().iterations;
 	topPCB.Phases.front().iterations = iters - 1;
-	if (iters == 1){
-		topPCB.Phases.pop_front();
-	}
 	int newcpu_time = topPCB.Phases.front().cpu_time;
 	process_phase newphase;
 	newphase.iterations = 1;
 	newphase.cpu_time = newcpu_time - (GLOBALCLOCK - currprocess_start_time);
 	newphase.io_time  = topPCB.Phases.front().io_time;
+    //cout << "SAVE STATE io time " << newphase.io_time <<endl;
+
+	if (iters == 1){
+		topPCB.Phases.pop_front();
+        //cout << "SAVE STATE io time "<< topPCB.Phases.front().io_time <<endl;
+	}
+
 	topPCB.Phases.push_front(newphase);
+
+
+	ready_PCBList.pop();
 	ready_PCBList.push(topPCB);
 }

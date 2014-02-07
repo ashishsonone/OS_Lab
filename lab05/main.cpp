@@ -106,11 +106,10 @@ int main(){
     cout << e.time <<endl;
 
 
-    /*  create event_manager 
+    //  create event_manager 
     EventManager EM(process_list);
     e = EM.event_list.top();
     cout << "first event @ time" << e.time << " type " << e.type << " p_id " << e.p_id <<endl;
-    */
 
-    //EM.run();
+    EM.run();
 }
