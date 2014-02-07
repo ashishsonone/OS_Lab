@@ -53,26 +53,28 @@ Event scheduler::IO_start(){
 
 /**		
 				COMMENT BLOCK
-	* if IO burst = 0 and its last iteration(=1) of last phase : terminte process and return pid = -1 in Event.
-	* if IO burst = 0 and its last iteration of a phase : pop that phase and return pid = -1 in Event.
-	* if IO burst = 0 and its not the last iteration of a phase : iteration-- and return pid = -1 in Event.	
+	* if IO burst = 0 and its last iteration(=1) of last phase : terminte process and return pid = -1 in Event.	
 	* if IO burst != 0, and iteration = 1 : pop that phase and return pid = process pid
 	* if IO burst != 0, and iteration > 1 : iteration = iteration - 1 and return pid = process pid
 
 **/
 	int IO_burst = blockPCB.Phases.front().io_time;
 	int iteration = blockPCB.Phases.front().iterations;
-	if (iteration == 1 && IO_burst == 0){							
-		blockPCB.Phases.pop_front();										
-	}
-	else {
-		blockPCB.Phases.front().iterations = blockPCB.Phases.front().iterations - 1;
-	}
+	int flag = 1;  					// if process terminates then dont push(flag = 0) in blocked pcb list
 
-	if (blockPCB.Phases.empty()){
-
+	if (IO_burst == 0){										//  terminate process if  burst = 0 : 
+		IO_interrupt.pid = -1;	
+		flag = 0;											// it has to be last iteration of process
 	}
-	blocked_PCBList.push_back(blockPCB);
+	else if (iteration == 1 ){							
+		blockPCB.Phases.pop_front();	
+	}
+	else if (iteration > 1 ){
+		blockPCB.Phases.front().iterations = iteration - 1;
+	}
+	
+	if (flag == 0)	blocked_PCBList.push_back(blockPCB);
+	return IO_interrupt;	
 }
 
 
@@ -82,5 +84,6 @@ Event scheduler::schedule(){
 }
 
 int scheduler::IO_terminate(int pid){
-
+	int size = blocked_PCBList.size();
+	for (int i = 0; )
 }

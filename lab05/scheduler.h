@@ -30,7 +30,7 @@ public:
 	~scheduler();
 
 	priority_queue<PCB, vector<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
-	vector<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
+	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
 
 private:
 	Event addProcess(struct process);
