@@ -46,4 +46,6 @@ struct Event{
       }
 };
 
+void print_event(Event e);
+
 #endif
