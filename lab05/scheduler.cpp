@@ -84,6 +84,8 @@ Event scheduler::schedule(){
 }
 
 int scheduler::IO_terminate(int pid){
-	int size = blocked_PCBList.size();
-	for (int i = 0; )
+	list<PCB >::iterator it ;= blocked_PCBList.begin();	
+	for (int i = 0; i < size ; i++){
+
+	}
 }

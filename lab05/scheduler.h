@@ -33,7 +33,7 @@ public:
 	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
 
 private:
-	Event addProcess(struct process);
+	int addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
 	Event schedule(int pid);
