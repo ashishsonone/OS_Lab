@@ -17,7 +17,7 @@ struct process{
 	int p_id;
 	int start_priority;
 	int admission;
-	vector<process_phase> phases;
+	list<process_phase> phases;
 };
 
 struct sc_level{
