@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include "utils.h"
+#include "scheduler.h"
 
 using namespace std;
 
@@ -9,7 +10,8 @@ using namespace std;
 class EventManager{
 public:
     priority_queue <Event, vector<Event> > event_list;
-    Event dangling_event;
+    Event dangling_Start_IO;
+    scheduler sch;
 
     vector<process> process_list;
     EventManager(vector<process> pl); //insert admission events corresponding to process_list

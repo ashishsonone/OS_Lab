@@ -9,7 +9,7 @@
 using namespace std;
 
 vector<process> process_list;
-scheduler my_scheduler;
+scheduler_in my_scheduler;
 
 
 void process_proc_file(){
@@ -92,24 +92,25 @@ int main(){
     //preprocessing complete
     priority_queue <Event, vector<Event> > eventlist;
     Event e1 = {Start_IO, 2, 3};
-    Event e2 = {Start_IO, 2, 0};
-    Event e3 = {Start_IO, 2, 5};
+    Event e2 = {Start_IO, 3, 1};
+    Event e3 = {Start_IO, 4, 0};
     eventlist.push(e1);
     eventlist.push(e2);
     eventlist.push(e3);
     Event e;
     e = eventlist.top();
     eventlist.pop();
-    cout << e.time <<endl;
+    cout << e.p_id <<endl;
     e = eventlist.top();
     eventlist.pop();
     cout << e.time <<endl;
 
 
-    /*  create event_manager */
+    /*  create event_manager 
     EventManager EM(process_list);
     e = EM.event_list.top();
     cout << "first event @ time" << e.time << " type " << e.type << " p_id " << e.p_id <<endl;
+    */
 
-    EM.run();
+    //EM.run();
 }

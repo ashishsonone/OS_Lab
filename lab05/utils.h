@@ -25,7 +25,7 @@ struct sc_level{
 	int time_slice;
 };
 
-struct scheduler{
+struct scheduler_in{
 	int no_levels;
 	vector<sc_level> levels;
 };
