@@ -34,7 +34,6 @@ public:
 	bool preemption;
 	int currprocess_start_time;
 
-private:
 	int addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
