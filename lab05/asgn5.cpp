@@ -9,20 +9,21 @@ using namespace std;
 
 struct process_phase{
 	int iterations;
-	float cpu_time;
-	float io_time;
+	int cpu_time;
+	int io_time;
 };
 
 struct process{
 	int p_id;
 	int start_priority;
-	float admission;
+	int admission;
 	vector<process_phase> phases;
 };
 
 struct sc_level{
+	int level_number;
 	int priority;
-	float time_slice;
+	int time_slice;
 };
 
 struct scheduler{
@@ -37,9 +38,9 @@ scheduler my_scheduler;
 void process_proc_file(){
 	string line, line2;
 	int pid, prior;
-	float adm;
+	int adm;
 	int iter;
-	float cpu_t, io_t;
+	int cpu_t, io_t;
 	ifstream infile("PROCESS_SPEC");
 	while (std::getline(infile, line))
 	{
@@ -78,22 +79,24 @@ void process_scheduler_file(){
 	string line, line2;
 	int level_count;
 	int prior;
-	float t_slice;
+	int s_lvl;
+	int t_slice;
 	ifstream infile("SCHEDULER_SPEC");
 	while (std::getline(infile, line))
 	{
 		if(line=="SCHEDULER"){
 			getline(infile, line2);
 			std::istringstream iss(line2);
-		    if (!(level_count)) { break; } // error
+		    if (!(iss >> level_count)) { break; } // error
 		    // cout<<pid<<endl<<prior<<endl;
 			
 			my_scheduler.no_levels = level_count;
 			for(int i=0; i<level_count; i++){
 				getline(infile, line2);
 				std::istringstream iss(line2);
-				if (!(iss >> prior >> t_slice)) { break; } // error
+				if (!(iss >> s_lvl >> prior >> t_slice)) { break; } // error
 				sc_level scl;
+				scl.level_number = s_lvl;
 				scl.priority = prior;
 				scl.time_slice = t_slice;
 				my_scheduler.levels.push_back(scl);
