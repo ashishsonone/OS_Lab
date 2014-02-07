@@ -8,8 +8,9 @@ class Process;
 
 class longtermScheduler{
 public:
-
+	list<Process> admitProcessList;
+	
 
 private:
-	
+
 };
