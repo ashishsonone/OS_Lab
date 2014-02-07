@@ -32,18 +32,15 @@ scheduler::scheduler()
 	preemption = 0;
 }
 
-int scheduler::addProcess(process newProcess){
+void scheduler::addProcess(process newProcess){
 	PCB newPCB;
 	newPCB.pid = newProcess.p_id;
 	newPCB.priority = newProcess.start_priority;
  	newPCB.state = ready_state;
  	newPCB.Phases.assign(newProcess.phases.begin(), newProcess.phases.end());
-
- 	if (ready_PCBList.empty()){
- 		ready_PCBList.push(newPCB);
- 		preemption = 0;
- 		return 0;
- 	}
+ 	ready_PCBList.push(newPCB);
+ 	preemption = 0;
+ 	
 }
 
 Event scheduler::schedule(int type){
@@ -57,8 +54,6 @@ Event scheduler::schedule(int type){
 		return start_IO;
 	}	
 	else {
-
-
 		return start_IO;
 	}
 }
