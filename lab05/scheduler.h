@@ -5,12 +5,12 @@
 using namespace std;
 
 
-enum{
+enum process_state{
 	ready_state,
 	block_state
-} process_state;
+} ;
 
-struct {
+struct PCB {
 	int pid;
 	int priority;
 	process_state state;
@@ -18,7 +18,7 @@ struct {
 	friend bool operator <(const PCB& lhs, const PCB& rhs){
          return lhs.priority < rhs.priority;
     }
-} PCB;
+} ;
 
 
 class schedulerLevel;
@@ -30,11 +30,14 @@ public:
 	~scheduler();
 
 	priority_queue<PCB, vector<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
-	vector<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
+	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
+	bool preemption;
+	int currprocess_start_time;
 
 private:
-	Event addProcess(struct process);
+	int addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
-	Event schedule(int pid);
+	Event schedule();
+	void save_state();
 };
