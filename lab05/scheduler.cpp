@@ -131,7 +131,7 @@ Event scheduler::IO_start(){
 	
 	if (flag == 1)	{
         blocked_PCBList.push_back(blockPCB);
-        cout << "Process with pid : " << blockPCB.pid << endl;
+        cout << "Process with pid : " << blockPCB.pid << " pushed to blocked_PCBList" << endl;
     }
     //cout << "ready pcb list size IOStart" << ready_PCBList.size() <<endl;
     //cout << "Inside iOstart : returning event time "  << IO_interrupt.time <<endl;
