@@ -54,6 +54,7 @@ void EventManager::handle_event(Event e){
 void EventManager::run(){
     while(1){
         cout <<endl;
+        cout << "looking at rem events" <<endl;
         //schedule() called at end
         cout << "Event list size " << event_list.size() <<endl;
         if(danglingEvent.p_id != -1) {
