@@ -30,7 +30,7 @@ private:
 scheduler::scheduler()
 {
 	currprocess_start_time = 0;
-	preemption = 0;
+	preemption = 1;
 }
 
 scheduler::~scheduler(){
@@ -49,7 +49,7 @@ int scheduler::addProcess(process newProcess){
  		return 0;
  	}
  	else if (ready_PCBList.top().priority > newPCB.priority){
- 		preemption = 1;
+ 		//preemption = 1;
  		ready_PCBList.push(newPCB);
  		return 0;
  	}
@@ -74,15 +74,18 @@ Event scheduler::schedule(){
 		start_IO.time = GLOBALCLOCK + ready_PCBList.top().Phases.front().cpu_time;
 		//cout << "Start cpu time " <<  ready_PCBList.top().Phases.front().cpu_time <<endl;
         cout << "Scheduled new process with"; print_event(start_IO);
+        preemption = 1;
 		return start_IO;
 	}
 	else {
+        //preemption = 1;
 		return start_IO;
 	}
 }
 
 
 Event scheduler::IO_start(){
+    preemption = 0;
 
 	int clock = GLOBALCLOCK;												// current global time
     //cout << "Inside iOstart : GLOBALCLOCK "  << GLOBALCLOCK <<endl;
@@ -96,7 +99,7 @@ Event scheduler::IO_start(){
 	IO_interrupt.time = clock;												// IO_interrupt is defined, and this function returns this event to the event handler
     //cout << "Inside iOstart : returning event time clock"  << clock <<endl;
 
-    cout << "ready pcb list size " << ready_PCBList.size() <<endl;
+    //cout << "ready pcb list size IOStart" << ready_PCBList.size() <<endl;
 	PCB blockPCB = ready_PCBList.top();
 	ready_PCBList.pop();
 	//currprocess_start_time = GLOBALCLOCK;
@@ -130,6 +133,7 @@ Event scheduler::IO_start(){
         blocked_PCBList.push_back(blockPCB);
         cout << "Process with pid : " << blockPCB.pid << endl;
     }
+    //cout << "ready pcb list size IOStart" << ready_PCBList.size() <<endl;
     //cout << "Inside iOstart : returning event time "  << IO_interrupt.time <<endl;
 	return IO_interrupt;	
 }
@@ -138,6 +142,8 @@ Event scheduler::IO_start(){
 
 
 int scheduler::IO_terminate(int p_id){
+    cout << "IO Terminate entry time premtion " << preemption <<endl;
+    //cout << "ready pcb list size IO Terminate" << ready_PCBList.size() <<endl;
 	int priority_flag = 0;
 	PCB freedPCB;
 
@@ -151,9 +157,10 @@ int scheduler::IO_terminate(int p_id){
 		it++;
 	}
 
+    //cout << "ready pcb list size IO Terminate" << ready_PCBList.size() <<endl;
 	if (freedPCB.Phases.empty()){
 		cout << "Process with pid : " << freedPCB.pid  << "has been terminated" << " @ time ----" << GLOBALCLOCK <<endl;
-		preemption = 1; 			// in this no check for priority because process has terminated
+		//preemption = 1; 			// in this no check for priority because process has terminated
 		return 0;
 	}
 
@@ -164,7 +171,7 @@ int scheduler::IO_terminate(int p_id){
 		return -1;
     }
     else if(freedPCB.priority > ready_PCBList.top().priority){
-		save_state();
+		if(preemption == 1) save_state();
 		ready_PCBList.push(freedPCB);
 		preemption = 0;
 		//currprocess_start_time = GLOBALCLOCK;
@@ -172,7 +179,7 @@ int scheduler::IO_terminate(int p_id){
 	}
 	else {
 		ready_PCBList.push(freedPCB);
-		preemption = 1;
+		//preemption = 1;
 		return 0;
 	}
 }

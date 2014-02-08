@@ -28,28 +28,30 @@ void EventManager::handle_event(Event e){
         }
     }
     else if(e.type == End_IO){
+        cout << "Event end io "; print_event(e);
         int p_id = e.p_id;
 	    int result = sch.IO_terminate(p_id);
         if(result == -1) { //curr process has been premted, remove dangling_Start_IO
-            cout << "Premting current process " << endl;
+            //cout << "Premting current process " << endl;
             dangling_Start_IO.p_id = -1;
         }
         else{ //result = 0 , no changes need to be made
         }
     }
     else if(e.type == Admission){
+        cout << "Event Admission "; print_event(e);
         int p_id = e.p_id;
         for(int i=0; i<process_list.size(); i++){
             process pro = process_list[i];
             if(pro.p_id == p_id){ //process found
                 int result = sch.addProcess(pro);
                 if(result == -1){ //this means the curr process has been premeted, so remove dangling_Start_IO
-                    cout << "Premting current process " << endl;
+                    //cout << "Premting current process " << endl;
                     dangling_Start_IO.p_id = -1;
                 }
                 else{ //result = 0 , no changes need to be made
                 }
-                cout << "Adding Process " << p_id <<endl;
+                //cout << "Adding Process " << p_id <<endl;
             }
         }
     }
@@ -64,6 +66,7 @@ void EventManager::run(){
             cout << "dangling_Start_IO event ";
             print_event(dangling_Start_IO);
         }
+
         if(event_list.empty() && dangling_Start_IO.p_id == -1){
             cout << "EventList empty : exiting"<<endl;
             break;  // we are done
@@ -76,7 +79,7 @@ void EventManager::run(){
             if(dangling_Start_IO.p_id != -1 && dangling_Start_IO.time <= e.time){
                 GLOBALCLOCK = dangling_Start_IO.time; //advance global clock
                 cout << "Advancing GLOBALCLOCK to dangling" << GLOBALCLOCK <<endl;
-                cout << "handling event  dangle"; print_event(dangling_Start_IO);
+                //cout << "handling event  dangle"; print_event(dangling_Start_IO);
                 handle_event(dangling_Start_IO);
                 dangling_Start_IO.p_id = -1;
             }
@@ -85,15 +88,15 @@ void EventManager::run(){
                 GLOBALCLOCK = e.time; //advance global clock
                 cout << "Advancing GLOBALCLOCK to notempty" << GLOBALCLOCK <<endl;
                 handle_event(e);
-                cout << "handling event  top"; print_event(e);
+                //cout << "handling event  top"; print_event(e);
                 event_list.pop();
             }
         }
         else{ //ony dangling_Start_IO exists
             GLOBALCLOCK = dangling_Start_IO.time; //advance global clock
             cout << "Advancing GLOBALCLOCK" << GLOBALCLOCK <<endl;
+            //cout << "handling event hhh"; print_event(dangling_Start_IO);
             handle_event(dangling_Start_IO);
-            cout << "handling event hhh"; print_event(dangling_Start_IO);
             dangling_Start_IO.p_id = -1;
         }
 
@@ -104,7 +107,7 @@ void EventManager::run(){
                 break;
             }
             handle_event(e);
-            cout << "handling event "; print_event(e);
+            //cout << "handling event "; print_event(e);
             event_list.pop();
         }
 
