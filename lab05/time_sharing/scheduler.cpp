@@ -64,11 +64,11 @@ void scheduler::addProcess(process newProcess){
 void scheduler::timer_handler(){
 	// Event timer;
 	if(ready_PCBList.empty()) {
-		if (timer_flag != 1) timer_flag = 0;			// other interrupt might have set it because they needed scheduler
+		cout << "In Timer Handler : Should not come here " <<endl;
 		return;
 	}
 	save_state();
-	PCB = ready_PCBList.pop();
+	//PCB = ready_PCBList.pop();
 	timer_flag = 1;	
 }
 
@@ -93,7 +93,7 @@ Event scheduler::schedule(){
 					NEED TO CHECK IT 
 		
 		**/
-		if (addtime >= TIMER){
+		if (addtime > TIMER){
 			preempt.type = Timer_Event;
 			preempt.time = GLOBALCLOCK + TIMER;
 		}
