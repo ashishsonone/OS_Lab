@@ -40,6 +40,7 @@ struct Event{
     EventType type;
     int p_id;
     int time;
+    int priority;
     friend bool operator <(const Event& lhs, const Event& rhs) //friend claim has to be here
       {
          return lhs.time > rhs.time;

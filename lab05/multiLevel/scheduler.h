@@ -18,21 +18,29 @@ struct PCB {
 	list<process_phase> Phases;
 } ;
 
+struct scheduler_level{
+	int level_number;
+	int priority;
+	int time_slice;
+	queue<PCB, list<PCB > > ready_PCBList;			// PCB list will help scheduler to determine the process to run from the list of ready processes
+	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
+};
 
-class schedulerLevel;
+class scheduler;
 
 class scheduler{
 public:
 
-	scheduler();
+	scheduler(scheduler_in);
 	~scheduler();
 
-	queue<PCB, list<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
-	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
-	bool timer_flag;
+	map<int, int> priority_level_map;				// maps priority of a process to the scheduler level, which is position of a level in the levels list
+	vector<scheduler_level > levelslist;			// the list of scheduler levels 
+	int currprocess_level_index;					// its -1 if no process running at a specific time otherwise index of highest level with a process in ready pcb list, i.e the level with running process
 	int currprocess_start_time;
+	int number_of_levels;							// 
 
-	void addProcess(struct process);
+	int addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
 	Event schedule();
