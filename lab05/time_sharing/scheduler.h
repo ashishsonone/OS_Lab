@@ -28,12 +28,13 @@ public:
 
 	queue<PCB, vector<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
 	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
-	bool preemption;
+	bool timer_flag;
 	int currprocess_start_time;
 
 	void addProcess(struct process);
 	Event IO_start();
 	int IO_terminate(int);
-	Event schedule(int type);
+	Event schedule();
 	void save_state();
+	void timer_handler();
 };

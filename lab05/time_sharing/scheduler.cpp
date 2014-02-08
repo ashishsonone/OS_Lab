@@ -23,13 +23,19 @@ private:
 	void blockProcess();
 };
 
+if (timer_flag != 1)			// it might have been set up by another interrupt, eg:- IO-terminate
+			timer_flag = 0; 			// in this no check for priority because process has terminated
 
+**/
+
+/**
+	* timer_flag = 1 : schedule must output an timer_event
 **/
 
 scheduler::scheduler()
 {
-	currprocess_start_time = 0;
-	preemption = 0;
+	currprocess_start_time = GLOBALCLOCK;
+	timer_flag = 0;
 }
 
 void scheduler::addProcess(process newProcess){
@@ -38,27 +44,73 @@ void scheduler::addProcess(process newProcess){
 	newPCB.priority = newProcess.start_priority;
  	newPCB.state = ready_state;
  	newPCB.Phases.assign(newProcess.phases.begin(), newProcess.phases.end());
+	/**
+
+					NEED TO CHECK IT 
+		
+	**/
+	if (ready_PCBList.empty()){
+ 		timer_flag = 1;
+ 	} 	
  	ready_PCBList.push(newPCB);
- 	preemption = 0;
- 	
 }
 
-Event scheduler::schedule(int type){
-	Event start_IO;
-	start_IO.p_id = -1;
-	if (preemption == 0){
+/**
+	* this function is called whenever a timer_event is encountered and the current process is to be preempted
+	* if the ready process list was empty, then no need to schedule another timer event
+	* timer_flag = 0 : when schedule is called it will not create a timer event
+**/
+
+void scheduler::timer_handler(){
+	// Event timer;
+	if(ready_PCBList.empty()) {
+		if (timer_flag != 1) timer_flag = 0;			// other interrupt might have set it because they needed scheduler
+		return;
+	}
+	save_state();
+	PCB = ready_PCBList.pop();
+	timer_flag = 1;	
+}
+
+/**
+	* this function is called every time after a series of events at some given time
+	* it returns either an IO start event or an timer event
+	* io start event returned if current process wants to start io but its time slice is not over
+	* timer event returned if current processes time slice is expired
+**/
+
+
+Event scheduler::schedule(){
+	Event preempt;
+	preempt.p_id = -1;
+	if (timer_flag == 1 && ready_PCBList.size() != 0){
+		timer_flag = 0;											// reset the timer flag 
+		int addtime = ready_PCBList.top().front().cpu_time;
 		currprocess_start_time = GLOBALCLOCK;
-		start_IO.p_id = ready_PCBList.top().pid;
-		start_IO.type = Start_IO;
-		start_IO.time = GLOBALCLOCK + ready_PCBList.top().Phases.front().cpu_time;
-		return start_IO;
+		preempt.p_id = ready_PCBList.top().pid;
+		/**
+
+					NEED TO CHECK IT 
+		
+		**/
+		if (addtime >= TIMER){
+			preempt.type = Timer_Event;
+			preempt.time = GLOBALCLOCK + TIMER;
+		}
+		else {
+			preempt.type = Start_IO;
+			preempt.time = GLOBALCLOCK + addtime;
+		}
+		return preempt;
 	}	
 	else {
-		return start_IO;
+		return preempt;			// with pid = -1  i.e either ready list empty or timer_flag is not set which means not change to schedule
 	}
 }
 
-
+/**
+	* this function handels IO start event
+**/
 Event scheduler::IO_start(){
 
 	int clock = GLOBALCLOCK;												// current global time
@@ -71,7 +123,7 @@ Event scheduler::IO_start(){
 
 	PCB blockPCB = ready_PCBList.top();
 	ready_PCBList.pop();
-	currprocess_start_time = GLOBALCLOCK;
+	//currprocess_start_time = GLOBALCLOCK;
 
 /**		
 				COMMENT BLOCK
@@ -82,9 +134,9 @@ Event scheduler::IO_start(){
 **/
 	int IO_burst = blockPCB.Phases.front().io_time;
 	int iteration = blockPCB.Phases.front().iterations;
-	int flag = 1;  					// if process terminates then dont push(flag = 0) in blocked pcb list
+	int flag = 1;  					// if process terminates then dont push:(flag = 0) in blocked pcb list
 
-	if (IO_burst == 0){										//  terminate process if  burst = 0 :
+	if (IO_burst == 0){										
 		cout << "Process with pid : " << blockPCB.pid  << "has been terminated.\n"; 
 		IO_interrupt.p_id = -1;	
 		flag = 0;											// it has to be last iteration of process
@@ -99,6 +151,8 @@ Event scheduler::IO_start(){
 	}
 	
 	if (flag == 1)	blocked_PCBList.push_back(blockPCB);
+
+	timer_flag = 1;					// now we need to schedule new process, in each case so we set timer flag
 	return IO_interrupt;	
 }
 
@@ -121,20 +175,31 @@ int scheduler::IO_terminate(int p_id){
 
 	if (freedPCB.Phases.empty()){
 		cout << "Process with pid : " << freedPCB.pid  << "has been terminated.\n";
-		preemption = 1; 			// in this no check for priority because process has terminated
 		return 0;
 	}
-
+/**
 	if (freedPCB.priority > ready_PCBList.top().priority){
 		save_state();
 		ready_PCBList.push(freedPCB);
-		preemption = 0;
+		timer_flag = 0;
 		currprocess_start_time = GLOBALCLOCK;
 		return -1;
 	}
+
+**/
+/**
+	* if the ready list is empty then scheduler must check for new process when its called so set timer flag
+	* if ready list is not empty, then the top function will be in execution and will be preempted only on expiration of its slice
+**/
 	else {
+		/**
+
+					NEED TO CHECK IT 
+		
+		**/
+		if (ready_PCBList.empty()) timer_flag = 1;					
+		
 		ready_PCBList.push(freedPCB);
-		preemption = 1;
 		return 0;
 	}
 }
