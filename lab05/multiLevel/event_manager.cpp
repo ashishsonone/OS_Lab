@@ -1,16 +1,15 @@
 #include "event_manager.h"
 
 int GLOBALCLOCK;
-int TIMER;
 
-EventManager::EventManager(vector<process> pl, int TIMESLICE){
-    TIMER = TIMESLICE;
+EventManager::EventManager(vector<process> pl, scheduler_in sch_in){
+    sch = new scheduler(sch_in);
     GLOBALCLOCK = 0;
     process_list = pl;
     danglingEvent.p_id = -1;
     for(int i=0; i<process_list.size(); i++){
         process p = process_list[i];
-        Event e = {Admission, p.p_id, GLOBALCLOCK + p.admission};
+        Event e = {Admission, p.p_id, GLOBALCLOCK + p.admission, p.start_priority};
         event_list.push(e);
     }
 }
@@ -20,10 +19,11 @@ EventManager::~EventManager(){
 
 void EventManager::handle_event(Event e){
     if(e.type == Start_IO){
+        cout << "handling Start_IO event "; print_event(e);
         danglingEvent.p_id = -1; //no dangling event(timeslice or iostart) left.
-        Event e = sch.IO_start();//e is of type End_IO, if p_id=-1 means that process ended, else means it needs to added to eventlist
+        Event e = sch->IO_start();//e is of type End_IO, if p_id=-1 means that process ended, else means it needs to added to eventlist
         if(e.p_id != -1){
-            cout << "adding event IO_terminate to list"; print_event(e);
+            cout << "adding event IO_terminate to EventList "; print_event(e);
             event_list.push(e);
         }
         else{ //process had no io, and has ended
@@ -31,7 +31,12 @@ void EventManager::handle_event(Event e){
     }
     else if(e.type == End_IO){
         cout << "Event end io "; print_event(e);
-	    sch.IO_terminate(e.p_id); //process will be pushed from blocked to the queue(if still has something left to do)
+	    int result = sch->IO_terminate(e.p_id, e.priority); //process will be pushed from blocked to the queue(if still has something left to do)
+        if(result == -1){ //curr process premted, so set danglingEvent to -1
+            danglingEvent.p_id = -1;
+        }
+        else{ //no preemption
+        }
     }
     else if(e.type == Admission){
         cout << "Event Admission "; print_event(e);
@@ -39,15 +44,21 @@ void EventManager::handle_event(Event e){
         for(int i=0; i<process_list.size(); i++){
             process pro = process_list[i];
             if(pro.p_id == p_id){ //process found
-                sch.addProcess(pro);
+                int result = sch->addProcess(pro);
+                if(result == -1){ //this means the curr process has been premeted, so remove dangling_Start_IO
+                    danglingEvent.p_id = -1;
+                }
+                else{ //result = 0 , no changes need to be made
+                }
                 return;
             }
         }
         cout << "Error while admitting: process with pid : " << e.p_id << " not found in process list" <<endl;
     }
     else if(e.type == Timer_Event){
-        danglingEvent.p_id = -1;
-        sch.timer_handler();
+        cout << "handling Timer Event "; print_event(e);
+        danglingEvent.p_id = -1; //no danglingEvent left
+        sch->timer_handler();
     }
 }
 
@@ -55,6 +66,7 @@ void EventManager::run(){
     while(1){
         cout <<endl;
         //schedule() called at end
+        cout << "looking at rem events" <<endl;
         cout << "Event list size " << event_list.size() <<endl;
         if(danglingEvent.p_id != -1) {
             cout << "danglingEvent event ";
@@ -72,7 +84,7 @@ void EventManager::run(){
             e = event_list.top();
             if(danglingEvent.p_id != -1 && danglingEvent.time <= e.time){
                 GLOBALCLOCK = danglingEvent.time; //advance global clock
-                cout << "Advancing GLOBALCLOCK to dangling" << GLOBALCLOCK <<endl;
+                cout << "Advancing GLOBALCLOCK to dangling  " << GLOBALCLOCK <<endl;
                 //cout << "handling event  dangle"; print_event(danglingEvent);
                 handle_event(danglingEvent);
                 danglingEvent.p_id = -1;
@@ -80,7 +92,7 @@ void EventManager::run(){
             else{
                 e = event_list.top();
                 GLOBALCLOCK = e.time; //advance global clock
-                cout << "Advancing GLOBALCLOCK to notempty" << GLOBALCLOCK <<endl;
+                cout << "Advancing GLOBALCLOCK to notempty  " << GLOBALCLOCK <<endl;
                 handle_event(e);
                 //cout << "handling event  top"; print_event(e);
                 event_list.pop();
@@ -88,7 +100,7 @@ void EventManager::run(){
         }
         else{ //ony danglingEvent exists
             GLOBALCLOCK = danglingEvent.time; //advance global clock
-            cout << "Advancing GLOBALCLOCK" << GLOBALCLOCK <<endl;
+            cout << "Advancing GLOBALCLOCK  " << GLOBALCLOCK <<endl;
             //cout << "handling event hhh"; print_event(danglingEvent);
             handle_event(danglingEvent);
             danglingEvent.p_id = -1;
@@ -106,7 +118,7 @@ void EventManager::run(){
         }
 
         cout << "calling schedule " << endl;
-        e = sch.schedule();
+        e = sch->schedule();
 
         if(e.p_id != -1){ //event is of type IO_start, pid!=-1 means new process scheduled so set its startIO, set the danglingEvent to this event
             //setting start io

@@ -16,7 +16,7 @@ if (timer_flag != 1)			// it might have been set up by another interrupt, eg:- I
 
 scheduler::scheduler(scheduler_in s_in)
 {
-	currprocess_level = -1;
+	currprocess_level_index = -1;
 	number_of_levels = s_in.no_levels;
 	for (int i = 0; i < number_of_levels ; i ++){
 		scheduler_level newlevel;
@@ -24,7 +24,7 @@ scheduler::scheduler(scheduler_in s_in)
 		newlevel.priority = s_in.levels[i].priority;
 		newlevel.time_slice = s_in.levels[i].time_slice;
 		levelslist.push_back(newlevel);
-		map[newlevel.priority] = i; 
+		priority_level_map[newlevel.priority] = i; 
 	}
 }
 
@@ -108,6 +108,7 @@ void scheduler::timer_handler(){
 	}
 	downgradePCB.priority = levelslist[index].priority;
 	levelslist[index].ready_PCBList.push(downgradePCB);
+    //cout << "Inside timer_handler : new index " << index << " size of ready_PCBList = " << levelslist[index].ready_PCBList.size() <<endl;
 	currprocess_level_index = -1;
 }
 
@@ -144,9 +145,9 @@ Event scheduler::schedule(){
 				NEED TO CHECK IT 
 	
 	**/
-	if (addtime > levelslist[i].time_slice){
+	if (addtime > levelslist[index].time_slice){
 		preempt.type = Timer_Event;
-		preempt.time = GLOBALCLOCK + levelslist[i].time_slice;
+		preempt.time = GLOBALCLOCK + levelslist[index].time_slice;
 	}
 	else {
 		preempt.type = Start_IO;
@@ -181,6 +182,7 @@ Event scheduler::IO_start(){
 	int delta = levelslist[index].ready_PCBList.front().Phases.front().io_time;			// new event creation of I/O interrupt type for iostart function
 	clock = clock + delta;
 	
+    //cout << "Inside IO_start hanlder size of index " << index << "  ready_PCBList = " << levelslist[index].ready_PCBList.size() <<endl; 
 	Event IO_interrupt;
 	IO_interrupt.type = End_IO;
 	IO_interrupt.p_id = levelslist[index].ready_PCBList.front().pid;
@@ -188,6 +190,7 @@ Event scheduler::IO_start(){
 
 	PCB blockPCB = levelslist[index].ready_PCBList.front();
 	levelslist[index].ready_PCBList.pop();
+    //cout << " 2 Inside IO_start hanlder size of index ready_PCBList = " << levelslist[index].ready_PCBList.size() <<endl; 
 	/**
 		* we need to demote because the process has used the entire time slice.
 		* we upgrade process only if process runs for time < time slice  
@@ -197,6 +200,7 @@ Event scheduler::IO_start(){
 			index--;
 		}
 		blockPCB.priority = levelslist[index].priority;
+    //cout << " -- Inside IO_start hanlder size of index ready_PCBList = " << levelslist[index].ready_PCBList.size() <<endl; 
 		//levelslist[index].ready_PCBList.push(blockPCB);
 	}
 	else {
@@ -204,6 +208,7 @@ Event scheduler::IO_start(){
 			index++ ;
 		}
 		blockPCB.priority = levelslist[index].priority;
+    //cout << " ++ Inside IO_start hanlder size of index ready_PCBList = " << levelslist[index].ready_PCBList.size() <<endl; 
 		//levelslist[index].ready_PCBList.push(blockPCB);
 	}
 	//currprocess_start_time = GLOBALCLOCK;
@@ -237,6 +242,8 @@ Event scheduler::IO_start(){
 
 	IO_interrupt.priority = levelslist[index].priority;
 
+
+    currprocess_level_index = -1;
 	return IO_interrupt;	
 }
 
@@ -306,10 +313,10 @@ int scheduler::IO_terminate(int p_id, int priority){
 	int index = priority_level_map[priority];	
 
 	list<PCB >::iterator it = levelslist[index].blocked_PCBList.begin();	
-	while(it!=blocked_PCBList.end()){
+	while(it!=levelslist[index].blocked_PCBList.end()){
 		if (it->pid == p_id){
 			freedPCB = *it;
-			blocked_PCBList.erase(it);				// process removed from the blocked process list
+			levelslist[index].blocked_PCBList.erase(it);				// process removed from the blocked process list
 			break;
 		}
 		it++;
