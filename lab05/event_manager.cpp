@@ -60,15 +60,20 @@ void EventManager::run(){
         cout <<endl;
         //schedule() called at end
         cout << "Event list size " << event_list.size() <<endl;
+        if(dangling_Start_IO.p_id != -1) {
+            cout << "dangling_Start_IO event ";
+            print_event(dangling_Start_IO);
+        }
         if(event_list.empty() && dangling_Start_IO.p_id == -1){
             cout << "EventList empty : exiting"<<endl;
             break;  // we are done
         }
+        cout << "$$\n";
 
         Event e;
         if(!event_list.empty()){
             e = event_list.top();
-            if(dangling_Start_IO.p_id != -1 && dangling_Start_IO.time < e.time){
+            if(dangling_Start_IO.p_id != -1 && dangling_Start_IO.time <= e.time){
                 GLOBALCLOCK = dangling_Start_IO.time; //advance global clock
                 cout << "Advancing GLOBALCLOCK to dangling" << GLOBALCLOCK <<endl;
                 cout << "handling event  dangle"; print_event(dangling_Start_IO);
@@ -91,15 +96,6 @@ void EventManager::run(){
             cout << "handling event hhh"; print_event(dangling_Start_IO);
             dangling_Start_IO.p_id = -1;
         }
-
-        //cout << " 001 Advancing GLOBALCLOCK to notempty" << GLOBALCLOCK <<endl;
-
-        if(dangling_Start_IO.p_id != -1 && dangling_Start_IO.time == GLOBALCLOCK){ //dangling Start IO belongs to this time
-            handle_event(dangling_Start_IO);
-            cout << "handling event "; print_event(dangling_Start_IO);
-            dangling_Start_IO.p_id = -1;
-        }
-        //cout << " 002 Advancing GLOBALCLOCK to notempty" << GLOBALCLOCK <<endl;
 
         while(!event_list.empty()){ //handle all events with timestamp = GLOBALCLOCK
            // cout << " 003 Advancing GLOBALCLOCK to notempty" << GLOBALCLOCK <<endl;

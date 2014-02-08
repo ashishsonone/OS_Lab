@@ -56,7 +56,7 @@ int scheduler::addProcess(process newProcess){
  	else {
  		save_state();
  		ready_PCBList.push(newPCB);
- 		currprocess_start_time = GLOBALCLOCK;
+ 		//currprocess_start_time = GLOBALCLOCK;
  		preemption = 0;
  		return -1;
  	}
@@ -99,7 +99,7 @@ Event scheduler::IO_start(){
     cout << "ready pcb list size " << ready_PCBList.size() <<endl;
 	PCB blockPCB = ready_PCBList.top();
 	ready_PCBList.pop();
-	currprocess_start_time = GLOBALCLOCK;
+	//currprocess_start_time = GLOBALCLOCK;
 
 /**		
 				COMMENT BLOCK
@@ -113,7 +113,7 @@ Event scheduler::IO_start(){
 	int flag = 1;  					// if process terminates then dont push(flag = 0) in blocked pcb list
 
 	if (IO_burst == 0){										//  terminate process if  burst = 0 :
-		cout << "Process with pid : " << blockPCB.pid  << "has been terminated.\n"; 
+		cout << "Process with pid : " << blockPCB.pid  << "has been terminated." << "@ time " << GLOBALCLOCK <<endl; 
 		IO_interrupt.p_id = -1;	
 		flag = 0;											// it has to be last iteration of process
 	}
@@ -152,16 +152,22 @@ int scheduler::IO_terminate(int p_id){
 	}
 
 	if (freedPCB.Phases.empty()){
-		cout << "Process with pid : " << freedPCB.pid  << "has been terminated.\n";
+		cout << "Process with pid : " << freedPCB.pid  << "has been terminated" << " @ time ----" << GLOBALCLOCK <<endl;
 		preemption = 1; 			// in this no check for priority because process has terminated
 		return 0;
 	}
 
-	if (freedPCB.priority > ready_PCBList.top().priority){
+    if(ready_PCBList.empty()){ //i.e just push this freed pcb
+		ready_PCBList.push(freedPCB);
+		preemption = 0;
+		//currprocess_start_time = GLOBALCLOCK;
+		return -1;
+    }
+    else if(freedPCB.priority > ready_PCBList.top().priority){
 		save_state();
 		ready_PCBList.push(freedPCB);
 		preemption = 0;
-		currprocess_start_time = GLOBALCLOCK;
+		//currprocess_start_time = GLOBALCLOCK;
 		return -1;
 	}
 	else {
