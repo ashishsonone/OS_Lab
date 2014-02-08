@@ -1,6 +1,7 @@
 #include <iostream>
 #include "utils.h"
 #include <queue>
+#include <list>
 
 using namespace std;
 
@@ -26,7 +27,7 @@ public:
 	scheduler();
 	~scheduler();
 
-	queue<PCB, vector<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
+	queue<PCB, list<PCB > > ready_PCBList;							// PCB list will help scheduler to determine the process to run from the list of ready processes
 	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
 	bool timer_flag;
 	int currprocess_start_time;

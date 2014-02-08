@@ -1,27 +1,9 @@
 #include "scheduler.h"
+extern int TIMER;
+extern int GLOBALCLOCK;
 
 
 /**
-
-class schedulerLevel{
-public:
-
-	schedulerLevel(int,int,int);
-	~schedulerLevel();
-
-	vector<Process > PCBList;							// PCB list will help scheduler to determine the process to run
-	int scheduling_level;
-	int priority;
-	int timeslice;
-
-private:
-	int get_scheduler_level();
-	int get_priority();
-	int get_timeslice();
-	void addProcess(struct process);
-	void removeProcess(struct process);
-	void blockProcess();
-};
 
 if (timer_flag != 1)			// it might have been set up by another interrupt, eg:- IO-terminate
 			timer_flag = 0; 			// in this no check for priority because process has terminated
@@ -36,6 +18,9 @@ scheduler::scheduler()
 {
 	currprocess_start_time = GLOBALCLOCK;
 	timer_flag = 0;
+}
+scheduler:: ~scheduler()
+{
 }
 
 void scheduler::addProcess(process newProcess){
@@ -85,9 +70,9 @@ Event scheduler::schedule(){
 	preempt.p_id = -1;
 	if (timer_flag == 1 && ready_PCBList.size() != 0){
 		timer_flag = 0;											// reset the timer flag 
-		int addtime = ready_PCBList.top().front().cpu_time;
+		int addtime = ready_PCBList.front().Phases.front().cpu_time;
 		currprocess_start_time = GLOBALCLOCK;
-		preempt.p_id = ready_PCBList.top().pid;
+		preempt.p_id = ready_PCBList.front().pid;
 		/**
 
 					NEED TO CHECK IT 
@@ -114,14 +99,14 @@ Event scheduler::schedule(){
 Event scheduler::IO_start(){
 
 	int clock = GLOBALCLOCK;												// current global time
-	int delta = ready_PCBList.top().Phases.front().io_time;					// new event creation of I/O interrupt type for iostart function
+	int delta = ready_PCBList.front().Phases.front().io_time;					// new event creation of I/O interrupt type for iostart function
 	clock = clock + delta;
 	Event IO_interrupt;
 	IO_interrupt.type = End_IO;
-	IO_interrupt.p_id = ready_PCBList.top().pid;
+	IO_interrupt.p_id = ready_PCBList.front().pid;
 	IO_interrupt.time = clock;												// IO_interrupt is defined, and this function returns this event to the event handler
 
-	PCB blockPCB = ready_PCBList.top();
+	PCB blockPCB = ready_PCBList.front();
 	ready_PCBList.pop();
 	//currprocess_start_time = GLOBALCLOCK;
 
@@ -178,7 +163,7 @@ int scheduler::IO_terminate(int p_id){
 		return 0;
 	}
 /**
-	if (freedPCB.priority > ready_PCBList.top().priority){
+	if (freedPCB.priority > ready_PCBList.front().priority){
 		save_state();
 		ready_PCBList.push(freedPCB);
 		timer_flag = 0;
@@ -205,7 +190,7 @@ int scheduler::IO_terminate(int p_id){
 }
 
 void scheduler::save_state(){
-	PCB topPCB = ready_PCBList.top();
+	PCB topPCB = ready_PCBList.front();
 	ready_PCBList.pop();
 	int iters = topPCB.Phases.front().iterations;
 	topPCB.Phases.front().iterations = iters - 1;
