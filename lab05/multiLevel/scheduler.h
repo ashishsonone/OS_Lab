@@ -42,7 +42,7 @@ public:
 
 	int addProcess(struct process);
 	Event IO_start();
-	int IO_terminate(int);
+	int IO_terminate(int,int);
 	Event schedule();
 	void save_state();
 	void timer_handler();

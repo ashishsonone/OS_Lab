@@ -1,5 +1,5 @@
 #include "scheduler.h"
-extern int TIMER;
+//extern int TIMER;			
 extern int GLOBALCLOCK;
 
 
@@ -14,16 +14,46 @@ if (timer_flag != 1)			// it might have been set up by another interrupt, eg:- I
 	* timer_flag = 1 : schedule must output an timer_event
 **/
 
-scheduler::scheduler()
+scheduler::scheduler(scheduler_in s_in)
 {
-	currprocess_start_time = GLOBALCLOCK;
-	timer_flag = 0;
+	currprocess_level = -1;
+	number_of_levels = s_in.no_levels;
+	for (int i = 0; i < number_of_levels ; i ++){
+		scheduler_level newlevel;
+		newlevel.level_number = s_in.levels[i].level_number;
+		newlevel.priority = s_in.levels[i].priority;
+		newlevel.time_slice = s_in.levels[i].time_slice;
+		levelslist.push_back(newlevel);
+		map[newlevel.priority] = i; 
+	}
 }
+
+/**
+	struct sc_level{
+	int level_number;
+	int priority;
+	int time_slice;
+};
+struct scheduler_level{
+	int level_number;
+	int priority;
+	int time_slice;
+	queue<PCB, list<PCB > > ready_PCBList;			// PCB list will help scheduler to determine the process to run from the list of ready processes
+	list<PCB > blocked_PCBList;						// processes which are blocked are stored in this list
+};
+
+struct scheduler_in{
+	int no_levels;
+	vector<sc_level> levels;
+};
+	
+**/
+
 scheduler:: ~scheduler()
 {
 }
 
-void scheduler::addProcess(process newProcess){
+int scheduler::addProcess(process newProcess){
 	PCB newPCB;
 	newPCB.pid = newProcess.p_id;
 	newPCB.priority = newProcess.start_priority;
@@ -32,12 +62,29 @@ void scheduler::addProcess(process newProcess){
 	/**
 
 					NEED TO CHECK IT 
-		
+		* case 0 : every ready pcb list is empty
+		* 
 	**/
-	if (ready_PCBList.empty()){
- 		timer_flag = 1;
- 	} 	
- 	ready_PCBList.push(newPCB);
+	 	
+ 	if (currprocess_level_index == -1){
+ 		int index = priority_level_map[newPCB.priority];
+ 		levelslist[index].ready_PCBList.push(newPCB);
+ 		return 0;
+ 	}
+
+ 	else if (newPCB.priority > levelslist[currprocess_level_index].priority){
+ 		save_state();
+ 		currprocess_level_index = -1;
+ 		int index = priority_level_map[newPCB.priority];
+ 		levelslist[index].ready_PCBList.push(newPCB); 
+ 		return -1;
+ 	}
+
+ 	else {
+ 		int index = priority_level_map[newPCB.priority];
+ 		levelslist[index].ready_PCBList.push(newPCB); 
+ 		return 0;
+ 	}
 }
 
 /**
@@ -47,67 +94,118 @@ void scheduler::addProcess(process newProcess){
 **/
 
 void scheduler::timer_handler(){
-	// Event timer;
-	if(ready_PCBList.empty()) {
-		cout << "In Timer Handler : Should not come here " <<endl;
+	int index = currprocess_level_index;
+	if(index == -1 || levelslist[index].ready_PCBList.empty()) {
+		cout << "In Timer Handler : Should not come here. Index is : " << index <<endl;
 		return;
 	}
 	save_state();
-	//PCB = ready_PCBList.pop();
-	timer_flag = 1;	
+	PCB downgradePCB;
+	downgradePCB = levelslist[index].ready_PCBList.front();
+	levelslist[index].ready_PCBList.pop();
+	if (index > 0){
+		index--;
+	}
+	downgradePCB.priority = levelslist[index].priority;
+	levelslist[index].ready_PCBList.push(downgradePCB);
+	currprocess_level_index = -1;
 }
 
 /**
 	* this function is called every time after a series of events at some given time
 	* it returns either an IO start event or an timer event
 	* io start event returned if current process wants to start io but its time slice is not over
-	* timer event returned if current processes time slice is expired
+	* timer event returned if current processes time slice is expired and next process' cpu time is more than time slice 
 **/
 
 
 Event scheduler::schedule(){
 	Event preempt;
 	preempt.p_id = -1;
-	if (timer_flag == 1 && ready_PCBList.size() != 0){
-		timer_flag = 0;											// reset the timer flag 
-		int addtime = ready_PCBList.front().Phases.front().cpu_time;
-		currprocess_start_time = GLOBALCLOCK;
-		preempt.p_id = ready_PCBList.front().pid;
-		/**
-
-					NEED TO CHECK IT 
-		
-		**/
-		if (addtime > TIMER){
-			preempt.type = Timer_Event;
-			preempt.time = GLOBALCLOCK + TIMER;
+	int index = -1;
+	for (int i = number_of_levels - 1; i >= 0; i--){
+		if (!levelslist[i].ready_PCBList.empty()){
+			index = i;
+			break;
 		}
-		else {
-			preempt.type = Start_IO;
-			preempt.time = GLOBALCLOCK + addtime;
-		}
-		return preempt;
-	}	
-	else {
-		return preempt;			// with pid = -1  i.e either ready list empty or timer_flag is not set which means not change to schedule
 	}
+	if (index == -1 || currprocess_level_index != -1){
+		return preempt;
+	}
+
+	currprocess_level_index = index;
+
+	int addtime = levelslist[index].ready_PCBList.front().Phases.front().cpu_time;
+	currprocess_start_time = GLOBALCLOCK;
+	preempt.p_id = levelslist[index].ready_PCBList.front().pid;
+	preempt.priority = levelslist[index].priority;
+	/**
+
+				NEED TO CHECK IT 
+	
+	**/
+	if (addtime > levelslist[i].time_slice){
+		preempt.type = Timer_Event;
+		preempt.time = GLOBALCLOCK + levelslist[i].time_slice;
+	}
+	else {
+		preempt.type = Start_IO;
+		preempt.time = GLOBALCLOCK + addtime;
+	}
+	return preempt;
 }
 
 /**
 	* this function handels IO start event
+	* it returns the correspoding IO termintaion event
+	* 
 **/
-Event scheduler::IO_start(){
 
-	int clock = GLOBALCLOCK;												// current global time
-	int delta = ready_PCBList.front().Phases.front().io_time;					// new event creation of I/O interrupt type for iostart function
+/**
+	PCB downgradePCB;
+	downgradePCB = levelslist[index].ready_PCBList.front();
+	levelslist[index].ready_PCBList.pop();
+	if (index > 0){
+		index--;
+	}
+
+	downgradePCB.priority = levelslist[index].priority;
+	levelslist[index].ready_PCBList.push(downgradePCB);
+	currprocess_level_index = -1;
+**/
+
+Event scheduler::IO_start(){
+	int index = currprocess_level_index;
+	int clock = GLOBALCLOCK;															// current global time
+	int elapsed_time = currprocess_start_time - clock;									// current cpu time of process
+	int delta = levelslist[index].ready_PCBList.front().Phases.front().io_time;			// new event creation of I/O interrupt type for iostart function
 	clock = clock + delta;
+	
 	Event IO_interrupt;
 	IO_interrupt.type = End_IO;
-	IO_interrupt.p_id = ready_PCBList.front().pid;
+	IO_interrupt.p_id = levelslist[index].ready_PCBList.front().pid;
 	IO_interrupt.time = clock;												// IO_interrupt is defined, and this function returns this event to the event handler
 
-	PCB blockPCB = ready_PCBList.front();
-	ready_PCBList.pop();
+	PCB blockPCB = levelslist[index].ready_PCBList.front();
+	levelslist[index].ready_PCBList.pop();
+	/**
+		* we need to demote because the process has used the entire time slice.
+		* we upgrade process only if process runs for time < time slice  
+	**/
+	if (elapsed_time == levelslist[index].time_slice){
+		if (index > 0){
+			index--;
+		}
+		blockPCB.priority = levelslist[index].priority;
+		//levelslist[index].ready_PCBList.push(blockPCB);
+	}
+	else {
+		if (index < number_of_levels - 1){
+			index++ ;
+		}
+		blockPCB.priority = levelslist[index].priority;
+		//levelslist[index].ready_PCBList.push(blockPCB);
+	}
 	//currprocess_start_time = GLOBALCLOCK;
 
 /**		
@@ -135,20 +233,24 @@ Event scheduler::IO_start(){
 		flag = 1;
 	}
 	
-	if (flag == 1)	blocked_PCBList.push_back(blockPCB);
+	if (flag == 1)	levelslist[index].blocked_PCBList.push_back(blockPCB);
 
-	timer_flag = 1;					// now we need to schedule new process, in each case so we set timer flag
+	IO_interrupt.priority = levelslist[index].priority;
+
 	return IO_interrupt;	
 }
 
+/**
+	*
+**/
 
-
-
-int scheduler::IO_terminate(int p_id){
+/**
+int scheduler::IO_terminate(int p_id, int priority){
 	int priority_flag = 0;
 	PCB freedPCB;
+	int index = priority_level_map[priority];	
 
-	list<PCB >::iterator it = blocked_PCBList.begin();	
+	list<PCB >::iterator it = levelslist[index].blocked_PCBList.begin();	
 	while(it!=blocked_PCBList.end()){
 		if (it->pid == p_id){
 			freedPCB = *it;
@@ -175,26 +277,103 @@ int scheduler::IO_terminate(int p_id){
 /**
 	* if the ready list is empty then scheduler must check for new process when its called so set timer flag
 	* if ready list is not empty, then the top function will be in execution and will be preempted only on expiration of its slice
-**/
+
 	else {
 		/**
 
 					NEED TO CHECK IT 
 		
-		**/
-		if (ready_PCBList.empty()) timer_flag = 1;					
 		
-		ready_PCBList.push(freedPCB);
+		if (levelslist[index].ready_PCBList.empty()) currprocess_level_index = -1;					
+		
+		levelslist[index].ready_PCBList.push(freedPCB);
 		return 0;
 	}
 }
 
+
+
+**/
+
+
+
+
+int scheduler::IO_terminate(int p_id, int priority){
+    //cout << "IO Terminate entry time premtion " << preemption <<endl;
+    //cout << "ready pcb list size IO Terminate" << ready_PCBList.size() <<endl;
+	int priority_flag = 0;
+	PCB freedPCB;
+	int index = priority_level_map[priority];	
+
+	list<PCB >::iterator it = levelslist[index].blocked_PCBList.begin();	
+	while(it!=blocked_PCBList.end()){
+		if (it->pid == p_id){
+			freedPCB = *it;
+			blocked_PCBList.erase(it);				// process removed from the blocked process list
+			break;
+		}
+		it++;
+	}
+
+    //cout << "ready pcb list size IO Terminate" << ready_PCBList.size() <<endl;
+	if (freedPCB.Phases.empty()){
+		cout << "Process with pid : " << freedPCB.pid  << "has been terminated" << " @ time ----" << GLOBALCLOCK <<endl;
+		//preemption = 1; 			// in this no check for priority because process has terminated
+
+		return 0;
+	}
+
+     
+    if (index > currprocess_level_index){
+    	if (currprocess_level_index != -1)
+    		save_state();
+
+    	currprocess_level_index = -1;
+    	
+		levelslist[index].ready_PCBList.push(freedPCB);
+		//currprocess_start_time = GLOBALCLOCK;
+		return -1;
+    }
+	else {
+		levelslist[index].ready_PCBList.push(freedPCB);
+		return 0;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+	* this function will save the state of the current running process
+	* it will not worry about what to be done after that, 
+	* the correspinding event handler that called this function will take care of the rest 
+	* no argument
+**/
+
 void scheduler::save_state(){
-	PCB topPCB = ready_PCBList.front();
-	ready_PCBList.pop();
+	int index = currprocess_level_index;
+	PCB & topPCB = levelslist[index].ready_PCBList.front();				// pointer used because we need to update top itself
 	int iters = topPCB.Phases.front().iterations;
 	topPCB.Phases.front().iterations = iters - 1;
-	
+
 	int newcpu_time = topPCB.Phases.front().cpu_time;
 	process_phase newphase;
 	newphase.iterations = 1;
@@ -204,5 +383,4 @@ void scheduler::save_state(){
 		topPCB.Phases.pop_front();
 	}
 	topPCB.Phases.push_front(newphase);
-	ready_PCBList.push(topPCB);
 }
