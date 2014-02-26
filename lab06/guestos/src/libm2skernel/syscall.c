@@ -843,6 +843,12 @@ int handle_guest_syscalls() {
         }
         case syscall_code_read_write_disk:
         {
+            mem_map(isa_mem, 0, 100, mem_access_read | mem_access_write );
+            char str[100];
+            mem_write_string(isa_mem, 0, "hello world");
+            mem_read_string(isa_mem, 0, 100, str);
+            printf("String read is : %s\n", str);
+            break;
         }
 
         default:
