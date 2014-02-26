@@ -823,11 +823,27 @@ int handle_guest_syscalls() {
     int syscode = isa_regs->eax;
     int retval = 0;
     switch (syscode) {
-	case syscall_code_get_pid:
-	{
-		retval=get_pid();
-		break;
-	}
+        case syscall_code_get_pid:
+        {
+            retval=get_pid();
+            break;
+        }
+
+        case syscall_code_set_instruction_slice:
+        {
+            int slice_val;
+
+            slice_val = isa_regs->ebx;
+
+            //isa_ctx->instr_slice = slice_val;
+            ctx_set_instruction_slice(isa_ctx, slice_val);
+            printf("changed instr_slice to: %d\n", isa_ctx->instr_slice);
+
+            break;
+        }
+        case syscall_code_read_write_disk:
+        {
+        }
 
         default:
             if (syscode >= syscall_code_count) {
@@ -837,7 +853,6 @@ int handle_guest_syscalls() {
                         syscode < syscall_code_count ? syscall_name[syscode] : "",
                         syscode, isa_regs->eip, err_syscall_note);
             }
-
     }
 
 	return retval;
@@ -927,7 +942,7 @@ void syscall_do() {
                 struct fd_t *fd;
                 struct pollfd fds;
 
-                /* Get parameters */
+                /* Get parameters ----- ssize_t read(int fd, void *buf, size_t count); */
                 guest_fd = isa_regs->ebx;
                 pbuf = isa_regs->ecx;
                 count = isa_regs->edx;

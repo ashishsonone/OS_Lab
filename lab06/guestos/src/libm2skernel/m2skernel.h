@@ -579,6 +579,8 @@ int ctx_get_status(struct ctx_t *ctx, enum ctx_status_enum status);
 void ctx_set_status(struct ctx_t *ctx, enum ctx_status_enum status);
 void ctx_clear_status(struct ctx_t *ctx, enum ctx_status_enum status);
 
+void ctx_set_instruction_slice(struct ctx_t *ctx, int slice_val);
+
 int ctx_futex_wake(struct ctx_t *ctx, uint32_t futex, uint32_t count, uint32_t bitset);
 void ctx_exit_robust_list(struct ctx_t *ctx);
 

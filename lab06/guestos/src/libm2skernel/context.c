@@ -316,6 +316,11 @@ void ctx_clear_status(struct ctx_t *ctx, enum ctx_status_enum status)
 	ctx_update_status(ctx, ctx->status & ~status);
 }
 
+void ctx_set_instruction_slice(struct ctx_t *ctx, int slice_val)
+{
+    ctx->instr_slice = slice_val;
+}
+
 
 /* Look for a context matching pid in the list of existing
  * contexts of the kernel. */
