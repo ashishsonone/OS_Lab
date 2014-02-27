@@ -26,6 +26,8 @@ unsigned long mem_max_mapped_space = 0;
 
 /* Safe mode */
 int mem_safe_mode = 1;
+int *disk_protection_map;
+int disk_protection_map_size; //=no of blocks
 
 
 /* Return mem page corresponding to an address. */

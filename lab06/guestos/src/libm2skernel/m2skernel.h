@@ -279,6 +279,8 @@ extern uint32_t isa_target;
 extern x86_inst_t isa_inst;
 extern uint64_t isa_inst_count;
 extern int isa_function_level;
+extern int *disk_protection_map; //disk protection map. maps block# to uid. initialised to -1 on boot time
+extern int disk_protection_map_size; //=no of blocks
 
 #define isa_call_debug(...) debug(isa_call_debug_category, __VA_ARGS__)
 #define isa_inst_debug(...) debug(isa_inst_debug_category, __VA_ARGS__)

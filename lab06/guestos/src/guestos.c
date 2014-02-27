@@ -175,6 +175,16 @@ void set_defaults(void) {
 	sectors=atoi(param_value);
 	sprintf(command,"(dd if=/dev/zero of=Sim_disk bs=%dx%dx%db count=1) 2> /dev/zero",heads,tracks,sectors);
 	system(command);
+
+    /* Allocate and init disk_protection_map */
+    disk_protection_map_size = heads*tracks*sectors;
+    disk_protection_map = (int*) malloc(disk_protection_map_size * sizeof(int));
+    printf("disk_protection_map size %d allocated\n", disk_protection_map_size);
+    int i;
+    for(i=0; i < disk_protection_map_size; i++){
+        disk_protection_map[i] = -1;
+    }
+    printf("disk_protection_map initialised to -1\n");
 }
 
 void install_signals(void){

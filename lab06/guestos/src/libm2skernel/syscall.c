@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <sys/mman.h>
 #include <linux/unistd.h>
+#define BLOCKSIZE 512
 
 
 int syscall_debug_category;
@@ -841,13 +842,112 @@ int handle_guest_syscalls() {
 
             break;
         }
+
+        //The parameters are given in ebx, ecx, edx, esi, edi, ebp.
+        //op,  #bytes, mem_addr, block_no, block_offset
         case syscall_code_read_write_disk:
         {
-            mem_map(isa_mem, 0, 100, mem_access_read | mem_access_write );
-            char str[100];
-            mem_write_string(isa_mem, 0, "hello world");
-            mem_read_string(isa_mem, 0, 100, str);
-            printf("String read is : %s\n", str);
+            int op = isa_regs->ebx; // 0 read from disk : disk -> mem,
+                                    // 1 write into disk:  mem -> disk
+            int no_bytes = isa_regs->ecx;
+            int mem_addr = isa_regs->edx;
+            int block_no = isa_regs->esi;
+            int block_offset = isa_regs->edi;
+
+            int uid = isa_ctx->uid;
+
+            //perform disk access check
+            int first_block_access = block_no;
+
+            int rem_bytes = no_bytes - (BLOCKSIZE - block_offset); //removing bytes consumed in first block
+            int total_block_span;
+            int mid_no_blocks;
+            int right_rem;
+            int left_rem = 1;
+            if(rem_bytes > 0){
+                int mid_no_blocks = rem_bytes/BLOCKSIZE;
+                int right_rem = (rem_bytes%BLOCKSIZE)?1:0;
+                total_block_span = left_rem + mid_no_blocks + right_rem;
+            }
+            else{
+                int mid_no_blocks = 0;
+                int right_rem = 0; 
+                total_block_span = left_rem;
+            }
+
+
+            printf("no_bytes %d, block_offset %d, rem_bytes %d,  left_rem %d, mid_no_blocks %d, right_rem %d\n", no_bytes, block_offset, rem_bytes, left_rem, mid_no_blocks, right_rem);
+            printf("Total block span %d\n", left_rem+mid_no_blocks+ right_rem);
+            printf("UID for process %d\n", uid);
+
+            int i;
+            for(i=first_block_access; i< first_block_access+total_block_span; i++){
+                printf("disk protection map : %d\n", disk_protection_map[i]);
+                if(disk_protection_map[i]==-1 || disk_protection_map[i]==uid){
+                }
+                else{
+                    printf("Access Denied : You (uid %d) can't access other's data\n", uid);
+                    retval = -1;
+                    return retval;
+                }
+            }
+
+            /*
+            //mem_map(isa_mem, 0, 100, mem_access_read | mem_access_write );
+            int wb = 22;
+            int rb;
+        //mem_read(mem, addr, size, buf)
+            mem_write(isa_mem, 0, sizeof(int), &wb);
+            mem_read(isa_mem, 0,sizeof(int), &rb);
+            printf("\nRead data is : %d\n", rb);
+            */
+            FILE *fp = fopen("Sim_disk", "rb+");
+            if(fp == NULL){
+                printf("Couldn't open HardDisk");
+                break;
+            }
+
+            if(op == 1){//read from mem, write to disk
+                /*** set disk_protection_map info *****/
+                for(i=first_block_access; i< first_block_access+total_block_span; i++){
+                    printf("setting disk prote map for %d to %dn",i, uid);
+                    disk_protection_map[i]= uid;
+                }
+                /*** DONE  set disk_protection_map info *****/
+                printf("reading from mem\n");
+                void * buff = calloc(1, no_bytes);
+                int x;
+                printf("mem  addr %d\n", mem_addr);
+                printf("no bytes %d\n", no_bytes);
+                mem_read(isa_mem, mem_addr, no_bytes, buff);
+                //printf("%d\n", x);
+
+                int pos = block_no * BLOCKSIZE + block_offset;
+                fseek(fp, pos, SEEK_SET);
+                fwrite(buff, no_bytes, 1, fp);
+
+                retval = no_bytes;
+            }
+            else if(op == 0){//read from disk, write to memory
+                printf("read from disk\n");
+                char * buff = calloc(1, no_bytes);
+                printf("mem  addr %d\n", mem_addr);
+                printf("no bytes %d\n", no_bytes);
+
+                int pos = block_no * BLOCKSIZE + block_offset;
+                fseek(fp, pos, SEEK_SET);
+                fread(buff, no_bytes, 1, fp);
+
+                mem_write(isa_mem, mem_addr, no_bytes, buff);
+
+                retval = no_bytes;
+            }
+            else{
+                printf("Wrong operation code : use 0 for read from disk, 1 for write to disk\n");
+                retval = -1;
+            }
+
+            fclose(fp);
             break;
         }
 
