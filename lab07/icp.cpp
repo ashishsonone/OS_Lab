@@ -8,6 +8,11 @@
 #include <fstream>
 #define NUMTHRDS 4
 #define BUFFERSIZE 3
+
+#define DEBUG 0
+#define IFBUG if(DEBUG==1){
+#define ENDBUG }           
+
 using namespace std;
 typedef struct 
 {
@@ -42,7 +47,7 @@ pthread_cond_t cond_sender; //used when buffer is full and sender has to be bloc
 pthread_cond_t cond_recv[4];
 
 bool check_deadlock(){
-    cout << "check_deadlock " << blocked_threads << running_threads <<endl;
+    IFBUG cout << "check_deadlock " << blocked_threads << running_threads <<endl; ENDBUG
     if(running_threads==0 || blocked_threads < running_threads) return false;
 
     int flag = 0;
@@ -51,7 +56,7 @@ bool check_deadlock(){
             if(buffer[i].empty()) flag = 1;
         }
         if(thread_status[i] == 's'){
-            if(count==BUFFERSIZE) flag = 1;
+            if(count>=BUFFERSIZE) flag = 1;
         }
     }
 
@@ -65,19 +70,20 @@ bool check_deadlock(){
 
 msg_container recv(int id){
     pthread_mutex_lock (&mutex_buffer);
-    cout << "*** recv called by " << id <<endl;
+    IFBUG cout << "*** recv called by " << id <<endl; ENDBUG
     if(buffer[id].empty()){
         blocked_threads++;
         thread_status[id]='r';
         check_deadlock();
-        cout << "*** wait recv START : " << id << endl;
+        IFBUG cout << "*** wait recv START : " << id << endl; ENDBUG
         //here mutex released
         pthread_cond_wait(&cond_recv[id], &mutex_buffer);
         //here mutex grabbed
         blocked_threads--;
         thread_status[id]='0';
+        IFBUG cout << "+++++++ target deadlock : " << id << endl; ENDBUG
         check_deadlock();
-        cout << "*** wait recv OVER : " << id << endl;
+        IFBUG cout << "*** wait recv OVER : " << id << endl; ENDBUG
     }
     //get the msg
     msg_container msg = buffer[id].front();
@@ -85,28 +91,28 @@ msg_container recv(int id){
     count--;
 
     printf("*** Message received: %d, %d, %s\n", msg.sender, msg.receiver, msg.msg);
-    pthread_mutex_unlock (&mutex_buffer);
 
     //free sender(in any)
     pthread_cond_signal(&cond_sender);
+    pthread_mutex_unlock (&mutex_buffer);
 
     return msg;
 }
 
 void send(char *message,int receiver, int id){
     pthread_mutex_lock (&mutex_buffer);
-    cout << "*** send(" << receiver << ") called by " << id <<endl;
+    IFBUG cout << "*** " << count <<" send(" << receiver << ") called by " << id <<endl; ENDBUG
     if(count == BUFFERSIZE){
         blocked_threads++;
         thread_status[id]='s';
         check_deadlock();
-        cout << "*** wait send START : " << id << endl;
+        IFBUG cout << "*** wait send START : " << id << endl; ENDBUG
         //here mutex released
         pthread_cond_wait(&cond_sender, &mutex_buffer);
         //here mutex grabbed
-        blocked_threads--;
         thread_status[id]='0';
-        cout << "*** wait send OVER : " << id << endl;
+        blocked_threads--;
+        IFBUG cout << "*** wait send OVER : " << id << endl; ENDBUG
     }
     //cout << "*** sent the message from "<< id << "to" << receiver << endl;
     //
@@ -120,10 +126,10 @@ void send(char *message,int receiver, int id){
 
     printf("*** Message sent: %d, %d, %s\n", msg.sender, msg.receiver, msg.msg);
 
-    pthread_mutex_unlock (&mutex_buffer);
 
     //free receiver concerned (if it was blocked for this)
     pthread_cond_signal(&cond_recv[receiver]);
+    pthread_mutex_unlock (&mutex_buffer);
 }
 
 void * runner(void *id){ //thread_arg type
@@ -147,11 +153,11 @@ void * runner(void *id){ //thread_arg type
             infile.getline(message, 100);
 
             send(message, rid, tid);
-            printf("###thread %d : Send message to: %d, msg: %s\n", tid, rid, message);
+            IFBUG printf("###thread %d : Send message to: %d, msg: %s\n", tid, rid, message); ENDBUG
         }
         else if(op == 0){
             msg = recv(tid);
-            printf("###thread %d : Message received from: %d, msg: %s\n", tid, msg.sender, msg.msg);
+            IFBUG printf("###thread %d : Message received from: %d, msg: %s\n", tid, msg.sender, msg.msg); ENDBUG
 
             if(msg.receiver != tid) printf("Wrong delivery of msg intended for %d, deliverd to %d\n", msg.receiver, tid);
         }
@@ -168,6 +174,7 @@ void * runner(void *id){ //thread_arg type
     pthread_mutex_unlock (&mutex_buffer);
 
     //pthread_mutex_unlock (&mutex_buffer);
+    //cout << " Thread " << tid << "Exits \n"; 
     pthread_exit(0);
 }
 
