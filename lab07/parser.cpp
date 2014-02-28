@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <fstream>
+
 using namespace std;
 
 struct command{
@@ -9,13 +11,13 @@ struct command{
 };
 
 
-command * parser(FILE * readline){
-	if (readline == NULL) perror ("Error opening file");
+command parser(ifstream readline){
+	//if (readline == NULL) perror ("Error opening file");
 
 	string tempstr;
 	getline(readline, tempstr);
 
-	int sizeofstr = string,size();
+	int sizeofstr = tempstr.size();
 	int count = 0, place = 0;
 	string tmp1, tmp2, tmp3;
 
@@ -39,5 +41,12 @@ command * parser(FILE * readline){
 
 		
 	}
+
+	struct command retcomm;
+	retcomm.operation = atoi(tmp1.c_str());
+	retcomm.reciever = atoi(tmp2.c_str());
+	strcpy(retcomm.message, tmp3.c_str());
+
+	return retcomm;
 
 }
