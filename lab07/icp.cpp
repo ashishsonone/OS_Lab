@@ -1,12 +1,13 @@
 #include <pthread.h>
 #include <cstring>
+#include <cstdlib>
 #include <string>
 #include <queue>
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
 #define NUMTHRDS 4
-#define BUFFERSIZE 20 
+#define BUFFERSIZE 3
 using namespace std;
 typedef struct 
 {
@@ -30,18 +31,52 @@ void *status;
 pthread_mutex_t mutex_buffer; //block everything associated with buffer
 queue<msg_container> buffer[4]; //one buff asso to each of the 4 thread(0-3), which is a queue
 int count = 0;//count on total no of msg currently in the buffer as a whole
+
+int running_threads = NUMTHRDS;
+int blocked_threads = 0;
+
+char thread_status[4];
 /** end buffer **/
 
 pthread_cond_t cond_sender; //used when buffer is full and sender has to be blocked so sender waits on it
 pthread_cond_t cond_recv[4];
+
+bool check_deadlock(){
+    cout << "check_deadlock " << blocked_threads << running_threads <<endl;
+    if(running_threads==0 || blocked_threads < running_threads) return false;
+
+    int flag = 0;
+    for(int i=0;i<NUMTHRDS;i++){
+        if(thread_status[i] == 'r'){
+            if(buffer[i].empty()) flag = 1;
+        }
+        if(thread_status[i] == 's'){
+            if(count==BUFFERSIZE) flag = 1;
+        }
+    }
+
+    if(flag ==1){
+        printf("****** deadlock detected ********\n");
+        exit(0);
+    }
+    return false;
+}
 
 
 msg_container recv(int id){
     pthread_mutex_lock (&mutex_buffer);
     cout << "*** recv called by " << id <<endl;
     if(buffer[id].empty()){
+        blocked_threads++;
+        thread_status[id]='r';
+        check_deadlock();
         cout << "*** wait recv START : " << id << endl;
+        //here mutex released
         pthread_cond_wait(&cond_recv[id], &mutex_buffer);
+        //here mutex grabbed
+        blocked_threads--;
+        thread_status[id]='0';
+        check_deadlock();
         cout << "*** wait recv OVER : " << id << endl;
     }
     //get the msg
@@ -62,8 +97,15 @@ void send(char *message,int receiver, int id){
     pthread_mutex_lock (&mutex_buffer);
     cout << "*** send(" << receiver << ") called by " << id <<endl;
     if(count == BUFFERSIZE){
+        blocked_threads++;
+        thread_status[id]='s';
+        check_deadlock();
         cout << "*** wait send START : " << id << endl;
+        //here mutex released
         pthread_cond_wait(&cond_sender, &mutex_buffer);
+        //here mutex grabbed
+        blocked_threads--;
+        thread_status[id]='0';
         cout << "*** wait send OVER : " << id << endl;
     }
     //cout << "*** sent the message from "<< id << "to" << receiver << endl;
@@ -85,11 +127,11 @@ void send(char *message,int receiver, int id){
 }
 
 void * runner(void *id){ //thread_arg type
-    //pthread_mutex_lock (&mutex_buffer);
+
     int tid = (int) id;
     char cfile[100];
     sprintf(cfile, "c%d.txt", tid);
-    cout << "tid " << tid << " tcontrol" << cfile <<endl;
+    //cout << "tid " << tid << " tcontrol" << cfile <<endl;
 
     msg_container msg;
 
@@ -103,9 +145,9 @@ void * runner(void *id){ //thread_arg type
         if(op == 1){
             infile>>rid;
             infile.getline(message, 100);
-            printf("###thread %d : Send message to: %d, msg: %s\n", tid, rid, message);
 
             send(message, rid, tid);
+            printf("###thread %d : Send message to: %d, msg: %s\n", tid, rid, message);
         }
         else if(op == 0){
             msg = recv(tid);
@@ -117,6 +159,13 @@ void * runner(void *id){ //thread_arg type
     }
 
     infile.close();
+
+
+    pthread_mutex_lock (&mutex_buffer);
+    running_threads--; //increment no of running threads
+    //cout << "decrementing running_threads "<<running_threads << endl;
+    check_deadlock();
+    pthread_mutex_unlock (&mutex_buffer);
 
     //pthread_mutex_unlock (&mutex_buffer);
     pthread_exit(0);
@@ -131,6 +180,7 @@ int main(){
     }
     for(int i=0;i<4;i++){
         targ_array[i].tid = i;
+        thread_status[i]='0';
         pthread_create(&threads[i], NULL, runner, (void *) i);
     }
 
