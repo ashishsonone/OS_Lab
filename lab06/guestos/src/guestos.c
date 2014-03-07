@@ -185,6 +185,7 @@ void set_defaults(void) {
         disk_protection_map[i] = -1;
     }
     printf("disk_protection_map initialised to -1\n");
+    initialize_pq(); // initialised the priority queue for interrupt handling
 }
 
 void install_signals(void){

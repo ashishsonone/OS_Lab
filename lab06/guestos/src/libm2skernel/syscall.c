@@ -19,6 +19,7 @@
 
 #include "m2skernel.h"
 
+
 #include <unistd.h>
 #include <utime.h>
 #include <time.h>
@@ -876,13 +877,13 @@ int handle_guest_syscalls() {
             }
 
 
-            printf("no_bytes %d, block_offset %d, rem_bytes %d,  left_rem %d, mid_no_blocks %d, right_rem %d\n", no_bytes, block_offset, rem_bytes, left_rem, mid_no_blocks, right_rem);
-            printf("Total block span %d\n", left_rem+mid_no_blocks+ right_rem);
-            printf("UID for process %d\n", uid);
+            // printf("no_bytes %d, block_offset %d, rem_bytes %d,  left_rem %d, mid_no_blocks %d, right_rem %d\n", no_bytes, block_offset, rem_bytes, left_rem, mid_no_blocks, right_rem);
+            // printf("Total block span %d\n", left_rem+mid_no_blocks+ right_rem);
+            // printf("UID for process %d\n", uid);
 
             int i;
             for(i=first_block_access; i< first_block_access+total_block_span; i++){
-                printf("disk protection map : %d\n", disk_protection_map[i]);
+                // printf("disk protection map : %d\n", disk_protection_map[i]);
                 if(disk_protection_map[i]==-1 || disk_protection_map[i]==uid){
                 }
                 else{
@@ -910,15 +911,15 @@ int handle_guest_syscalls() {
             if(op == 1){//read from mem, write to disk
                 /*** set disk_protection_map info *****/
                 for(i=first_block_access; i< first_block_access+total_block_span; i++){
-                    printf("setting disk prote map for %d to %dn",i, uid);
+                    // printf("setting disk prote map for %d to %dn",i, uid);
                     disk_protection_map[i]= uid;
                 }
                 /*** DONE  set disk_protection_map info *****/
-                printf("reading from mem\n");
+                // printf("reading from mem\n");
                 void * buff = calloc(1, no_bytes);
                 int x;
-                printf("mem  addr %d\n", mem_addr);
-                printf("no bytes %d\n", no_bytes);
+                // printf("mem  addr %d\n", mem_addr);
+                // printf("no bytes %d\n", no_bytes);
                 mem_read(isa_mem, mem_addr, no_bytes, buff);
                 //printf("%d\n", x);
 
@@ -929,10 +930,10 @@ int handle_guest_syscalls() {
                 retval = no_bytes;
             }
             else if(op == 0){//read from disk, write to memory
-                printf("read from disk\n");
+                // printf("read from disk\n");
                 char * buff = calloc(1, no_bytes);
-                printf("mem  addr %d\n", mem_addr);
-                printf("no bytes %d\n", no_bytes);
+                // printf("mem  addr %d\n", mem_addr);
+                // printf("no bytes %d\n", no_bytes);
 
                 int pos = block_no * BLOCKSIZE + block_offset;
                 fseek(fp, pos, SEEK_SET);
@@ -948,6 +949,12 @@ int handle_guest_syscalls() {
             }
 
             fclose(fp);
+            ctx_update_status(isa_ctx, ctx_suspended);
+            struct interrupt in;
+            in.instr_no = isa_inst_count + block_no * 100 + no_bytes;
+            in.type = iocomplete;
+            in.ctx = isa_ctx;
+            insert(in);
             break;
         }
 

@@ -20,6 +20,7 @@
 #include <m2skernel.h>
 
 
+
 /* Global Multi2Sim
  * Kernel Variable */
 struct kernel_t *ke;
@@ -82,26 +83,92 @@ void ke_done(void)
 	free(ke);
 	isa_done();
 	syscall_summary();
+
+}
+void interrupt_handler(struct interrupt in){
+	if(in.type==iocomplete){
+		//printf("passing ctx_running\n");
+		ctx_update_status(in.ctx, ctx_running);
+		printf("%d: io complete; changed status to running\n", in.ctx->pid);
+	}
+
+	else{
+		printf("Invalid type\n");
+		exit(0);
+	}
+
+}
+
+bool print_no_more = false, pl = false;
+
+void handle_top_interrupt(){
+	while(!isEmpty()){
+		print_no_more = false;
+		struct interrupt topInterrupt = findMin();
+		if(topInterrupt.instr_no == isa_inst_count){
+			printf("Handling current interrupt(s)   %d \n", isa_inst_count);
+			deleteMin();
+			// handle interrupt
+			interrupt_handler(topInterrupt);
+			if(!ke->running_list_head){
+				printf("Something wrong happened 22\n");
+			}
+		}	
+		else break;
+	}
 }
 
 /* Execute one instruction from each running context. */
 void ke_run(void)
 {
+	//printf("ke run called\n");
 	struct ctx_t *ctx, *ctx_trav; 
 	int flag = 0;
 
-	/* Run an instruction from every running process */
-	for (ctx = ke->running_list_head; ctx; ctx = ctx->running_next) {
-		int i;
-		//printf ("out - %p\n", ctx);
-
-		for ( i = 0 ; i < ctx->instr_slice ; ++i) {
-			ctx_execute_inst(ctx);
-
-			if (ctx!=ke->running_list_head)
-				break;
+	if(!ke->running_list_head){
+		if (!print_no_more) {
+			printf("Running list empty !\n");
+			print_no_more = true;
+			pl = true;
+		}
+		if(!isEmpty()){
+			isa_inst_count = findMin().instr_no;
+			printf("non-empty instruction list\n");
+			handle_top_interrupt();
+		}
+		else{
+			if (!print_no_more || (print_no_more && pl)) {
+				printf("Interrupt queue is also empty.\n");
+				print_no_more = true;
+				pl = false;
+			}
 		}
 	}
+
+
+
+
+	/* Run an instruction from every running process */
+	for (ctx = ke->running_list_head; ctx; ctx = ctx->running_next) {
+		print_no_more = false;
+		int i;
+		//printf ("out - %p\n", ctx);
+		//printf("after\n");
+
+		printf("%d exec instr\n", ctx->pid);
+		for ( i = 0 ; i < ctx->instr_slice ; ++i) {
+			//printf(" non-empty instruction list\n");
+			handle_top_interrupt();
+			if(!ctx_get_status(ctx,ctx_running)){
+				printf("%d no more running\n", ctx->pid);
+				break;
+			}
+			ctx_execute_inst(ctx); 
+
+			// if (ctx!=ke->running_list_head)
+			// 	break;
+		}
+	}	
 	
 	/* Free finished contexts */
 	while (ke->finished_list_head)
@@ -743,4 +810,69 @@ void ke_process_events()
 	/* Unlock */
 	pthread_mutex_unlock(&ke->process_events_mutex);
 }
+
+
+// Rehaul later #ASGN8
+
+struct BinaryHeap {
+	int currentSize;
+	TYPE array[1000];
+} pq;
+
+struct interrupt error;
+
+void initialize_pq() {
+	//pq.array = malloc (sizeof(TYPE) * pq.capacity);
+	pq.currentSize = 0;
+}
+
+bool isEmpty() {
+	return pq.currentSize == 0;
+}
+
+TYPE findMin() {
+	if (isEmpty()) {
+		printf ("#error: findMin() called with <pq> empty\n");
+		error.instr_no = -1;
+		return error;
+	}
+
+	return pq.array[1];
+}
+
+void insert (TYPE x) {
+	//if (currentSize == array.size( ) - 1) array.resize( array.size( ) * 2 );
+	printf("inserting interrupt %d\n", x.ctx->pid);
+	int hole = ++pq.currentSize;
+	pq.array[0] = x;
+	for( ; x.instr_no < pq.array[hole/2].instr_no; hole /= 2 )
+		pq.array[hole] = pq.array[hole/2];
+	pq.array[hole] = pq.array[0];
+}
+
+void percolateDown (int hole) {
+	int child;
+	TYPE tmp = pq.array[hole];
+	for( ; hole * 2 <= pq.currentSize; hole = child ) {
+		child = hole * 2;
+		if( child != pq.currentSize && pq.array[child+1].instr_no < pq.array[child].instr_no )
+			++child;
+		if( pq.array[child].instr_no < tmp.instr_no )
+			pq.array[ hole ] = pq.array[child];
+		else break;
+	}
+	pq.array[ hole ] = tmp;
+}
+
+void deleteMin( ) {
+	if (isEmpty()) {
+		printf ("#error: deleteMin() called with <pq> empty\n");
+		return;
+	}
+
+	pq.array[1] = pq.array[pq.currentSize--];
+	percolateDown(1);
+}
+
+void makeEmpty( ) { pq.currentSize = 0; }
 

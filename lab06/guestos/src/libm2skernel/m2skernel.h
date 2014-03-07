@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <gpukernel.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 
 /* Some forward declarations */
@@ -579,6 +580,7 @@ struct ctx_t *ctx_get_zombie(struct ctx_t *parent, int pid);
 
 int ctx_get_status(struct ctx_t *ctx, enum ctx_status_enum status);
 void ctx_set_status(struct ctx_t *ctx, enum ctx_status_enum status);
+void ctx_update_status(struct ctx_t *ctx, enum ctx_status_enum status);
 void ctx_clear_status(struct ctx_t *ctx, enum ctx_status_enum status);
 
 void ctx_set_instruction_slice(struct ctx_t *ctx, int slice_val);
@@ -653,6 +655,26 @@ void ke_dump(FILE *f);
 uint64_t ke_timer(void);
 void ke_process_events(void);
 void ke_process_events_schedule(void);
+
+
+
+typedef enum {iocomplete} interrupt_type ;
+
+typedef struct  interrupt{
+	int instr_no;
+	struct ctx_t* ctx;
+	interrupt_type type;
+};
+
+#define TYPE struct interrupt
+
+void initialize_pq();
+bool isEmpty();
+TYPE findMin();
+void insert (TYPE x);
+void percolateDown (int hole);
+void deleteMin();
+void makeEmpty();
 
 
 

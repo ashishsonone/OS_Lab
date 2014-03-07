@@ -148,6 +148,7 @@ void isa_set_flag(x86_flag_t flag)
 }
 
 
+
 void isa_clear_flag(x86_flag_t flag)
 {
 	isa_regs->eflags = CLEARBIT32(isa_regs->eflags, flag);

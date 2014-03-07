@@ -246,8 +246,9 @@ int ctx_get_status(struct ctx_t *ctx, enum ctx_status_enum status)
 }
 
 
-static void ctx_update_status(struct ctx_t *ctx, enum ctx_status_enum status)
+void ctx_update_status(struct ctx_t *ctx, enum ctx_status_enum status)
 {
+
 	enum ctx_status_enum status_diff;
 
 	/* Remove contexts from the following lists:
@@ -271,21 +272,30 @@ static void ctx_update_status(struct ctx_t *ctx, enum ctx_status_enum status)
 	
 	/* Update status */
 	ctx->status = status;
+	
 	if (ctx->status & ctx_finished)
 		ctx->status = ctx_finished | (status & ctx_alloc);
 	if (ctx->status & ctx_zombie)
 		ctx->status = ctx_zombie | (status & ctx_alloc);
+	
 	if (!(ctx->status & ctx_suspended) &&
 		!(ctx->status & ctx_finished) &&
 		!(ctx->status & ctx_zombie) &&
 		!(ctx->status & ctx_locked))
 		ctx->status |= ctx_running;
-	else
+	else{
 		ctx->status &= ~ctx_running;
+		//printf("going to else\n");
+	}
 	
 	/* Insert context into the corresponding lists. */
-	if (ctx->status & ctx_running)
+	if (ctx->status & ctx_running){
 		ke_list_insert_head(ke_list_running, ctx);
+		//printf("inserted into head\n");
+	}
+	else{
+		//printf("NOT   inserted into head\n");
+	}
 	if (ctx->status & ctx_zombie)
 		ke_list_insert_head(ke_list_zombie, ctx);
 	if (ctx->status & ctx_finished)
