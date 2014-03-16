@@ -18,6 +18,7 @@
  */
 
 #include "m2skernel.h"
+#include "hello.h"
 
 
 #include <unistd.h>
@@ -824,6 +825,7 @@ int get_pid() {
 int handle_guest_syscalls() {
     int syscode = isa_regs->eax;
     int retval = 0;
+    hello();
     switch (syscode) {
         case syscall_code_get_pid:
         {
@@ -839,6 +841,7 @@ int handle_guest_syscalls() {
 
             //isa_ctx->instr_slice = slice_val;
             ctx_set_instruction_slice(isa_ctx, slice_val);
+
             printf("changed instr_slice to: %d\n", isa_ctx->instr_slice);
 
             break;

@@ -16,6 +16,7 @@ libm2skernel_a_SOURCES = m2skernel.h \
 	regs.c \
 	signal.c \
 	syscall.c \
+	hello.c \
 	syscall.dat
 AM_CFLAGS = -Wall -fno-strict-aliasing -m32
 
