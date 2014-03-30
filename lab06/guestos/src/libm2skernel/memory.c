@@ -19,6 +19,7 @@
 
 #include <m2skernel.h>
 #include <sys/mman.h>
+#include "global_ram.h"
 
 /* Total space allocated for memory pages */
 unsigned long mem_mapped_space = 0;
@@ -116,6 +117,11 @@ static struct mem_page_t *mem_page_create(struct mem_t *mem, uint32_t addr, int 
 	
 	/* Insert in pages hash table */
 	page->next = mem->pages[index];
+	
+	ram_frame temp_frame = get_free_ram_frame();
+	page->frame_id = temp_frame.frame_id;
+	page->data = temp_frame.data;
+
 	mem->pages[index] = page;
 	mem_mapped_space += MEM_PAGESIZE;
 	mem_max_mapped_space = MAX(mem_max_mapped_space, mem_mapped_space);
@@ -162,8 +168,11 @@ static void mem_page_free(struct mem_t *mem, uint32_t addr)
 	else
 		mem->pages[index] = page->next;
 	mem_mapped_space -= MEM_PAGESIZE;
-	if (page->data)
-		free(page->data);//TODO dont free this
+	if (page->data){
+		if(page->frame_id != -1) release_ram_frame(page->frame_id);//TODO dont free this
+		page->data = NULL; //now this ram frame no longer belongs to this
+	}
+	
 	free(page);
 }
 
@@ -193,7 +202,8 @@ void mem_copy(struct mem_t *mem, uint32_t dest, uint32_t src, int size)
 		/* Different actions depending on whether source and
 		 * destination page data are allocated. */
 		if (page_src->data) {
-			if (!page_dest->data)
+			if (!page_dest->data)//Now this will not happen
+								//(as ram frame is always allocated during creating of page)
 				page_dest->data = malloc(MEM_PAGESIZE);
 			memcpy(page_dest->data, page_src->data, MEM_PAGESIZE);
 		} else {
@@ -233,7 +243,7 @@ void *mem_get_buffer(struct mem_t *mem, uint32_t addr, int size,
 		fatal("mem_get_buffer: permission denied at 0x%x", addr);
 	
 	/* Allocate and initialize page data if it does not exist yet. */
-	if (!page->data)
+	if (!page->data) //also this won't happen now as ram frame is alloc during page creation
 		page->data = calloc(1, MEM_PAGESIZE);
 	
 	/* Return pointer to page data */
@@ -508,10 +518,12 @@ void mem_map_host(struct mem_t *mem, struct fd_t *fd, uint32_t addr, int size,
 			fatal("mem_map_host: cannot overwrite a previous host mapping");
 
 		/* If page is pointing to some data, overwrite it */
-		if (page->data)
-			free(page->data); //TODO dont do this, just free the binding of page in global ram
+		if (page->data){
+			release_ram_frame(page->frame_id); //TODO dont do this, just free the binding of page in global ram
+		}
 
 		/* Create host mapping */
+		page->frame_id = -1; //because now page->data will point to some host ptr(see below)
 		page->host_mapping = hm;
 		page->data = ptr - addr + host_ptr;
 		hm->pages++;
