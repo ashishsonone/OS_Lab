@@ -163,7 +163,7 @@ static void mem_page_free(struct mem_t *mem, uint32_t addr)
 		mem->pages[index] = page->next;
 	mem_mapped_space -= MEM_PAGESIZE;
 	if (page->data)
-		free(page->data);
+		free(page->data);//TODO dont free this
 	free(page);
 }
 
@@ -509,7 +509,7 @@ void mem_map_host(struct mem_t *mem, struct fd_t *fd, uint32_t addr, int size,
 
 		/* If page is pointing to some data, overwrite it */
 		if (page->data)
-			free(page->data);
+			free(page->data); //TODO dont do this, just free the binding of page in global ram
 
 		/* Create host mapping */
 		page->host_mapping = hm;
