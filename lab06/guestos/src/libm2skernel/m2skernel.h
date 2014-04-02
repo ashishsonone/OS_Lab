@@ -55,6 +55,7 @@ int instr_slice;
 
 
 
+extern int LOADINGPHASE;
 
 /* Memory */
 

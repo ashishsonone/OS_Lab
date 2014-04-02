@@ -64,7 +64,7 @@ struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
 	//before returning make sure page has ram frame allocated
 	if(page!= NULL && page->frame_id == -1){
 		//printf("Page fault\n");
-		handle_page_fault(mem, page);
+		if(LOADINGPHASE != 1) handle_page_fault(mem, page);
 	}
 	
 	/* Return found page */
@@ -426,7 +426,7 @@ void mem_access_swap(struct mem_t *mem, uint32_t addr, int size, void *buf,
 		chunksize = MIN(size, MEM_PAGESIZE - offset);
 		//system("ls -l Sim_disk");
 
-		mem_access_page_boundary(mem, addr, chunksize, buf, access);
+		mem_access_page_boundary_swap(mem, addr, chunksize, buf, access);
 		//system("ls -l Sim_disk");
 
 		size -= chunksize;

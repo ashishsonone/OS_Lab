@@ -21,6 +21,7 @@
 
 int ld_debug_category;
 
+int LOADINGPHASE;
 
 static struct string_map_t sectionflags_map = {
 	3, {
@@ -167,6 +168,9 @@ void ld_load_sections(struct ctx_t *ctx, struct elf_file_t *elf)
 	char sflags[200], *name;
 	void *buf;
 
+	LOADINGPHASE = 1; //set loading phase
+
+
 	ld_debug("\nLoading ELF sections\n");
 	ld->bottom = 0xffffffff;
 	count = elf_section_count(elf);
@@ -200,6 +204,7 @@ void ld_load_sections(struct ctx_t *ctx, struct elf_file_t *elf)
 			elf_free_buffer(buf);
 		}
 	}
+	LOADINGPHASE = 0; //reset loading phase
 }
 
 
