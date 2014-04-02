@@ -170,6 +170,11 @@ void ld_load_sections(struct ctx_t *ctx, struct elf_file_t *elf)
 	ld_debug("\nLoading ELF sections\n");
 	ld->bottom = 0xffffffff;
 	count = elf_section_count(elf);
+
+	mem->bound_logical_page_tag = -1;
+	mem->allocated = get_free_ram_frame();
+			
+
 	for (i = 0; i < count; i++) {
 		elf_section_info(elf, i, &name, &addr, &size, &flags);
 		perm = mem_access_init | mem_access_read;

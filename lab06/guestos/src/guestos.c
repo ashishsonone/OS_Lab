@@ -191,6 +191,7 @@ void set_defaults(void) {
     printf("disk_protection_map initialised to -1\n");
     initialize_pq(); // initialised the priority queue for interrupt handling
     init_global_ram(); //initialise global ram
+    init_vmm(); //initialise virtual mem manager
 }
 
 void install_signals(void){
@@ -296,7 +297,6 @@ int main(int argc, char **argv) {
 
     printf("Returning after loading\n");
 
-    return;
     ///////////////////if (argc >= 1)
     ///		ld_load_prog_from_cmdline(argc - 1, user_prog_path );
     ////////////		ld_load_prog_from_cmdline(argc - 1, argv + 1);
@@ -319,6 +319,7 @@ int main(int argc, char **argv) {
         }
 
         /* Run an instruction from each running context */
+        printf("executing ke_run()\n");
         ke_run();
         sim_inst += ke->running_count;
         if (!ke->context_list_head)

@@ -41,6 +41,7 @@
 #include <gpukernel.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include "global_ram.h"
 
 
 /* Some forward declarations */
@@ -93,7 +94,7 @@ struct mem_page_t {
 	unsigned char *data; //is global ram frame's data, if host mapping not applicable
 	struct mem_host_mapping_t *host_mapping;  /* If other than null, page is host mapping */
 
-	int swap_page_no;
+	uint32_t swap_page_no;
 	int valid_bit;
 	int dirty_bit;
 	bool isPinned;
@@ -105,6 +106,8 @@ struct mem_t {
 	uint32_t last_address;  /* Address of last access */
 	int safe;  /* Safe mode */
 	struct mem_host_mapping_t *host_mapping_list;  /* List of host mappings */
+	ram_frame allocated;
+	uint32_t bound_logical_page_tag;
 };
 
 extern unsigned long mem_mapped_space;

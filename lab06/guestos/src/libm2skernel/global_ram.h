@@ -1,7 +1,10 @@
 #ifndef GLOBAL_RAM_H
 #define GLOBAL_RAM_H
-
 #define RAM_FRAMES 1024*10
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 typedef struct ram_frame{
 	unsigned char * data;

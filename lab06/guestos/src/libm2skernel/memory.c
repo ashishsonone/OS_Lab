@@ -34,6 +34,10 @@ int disk_protection_map_size; //=no of blocks
 /* Return mem page corresponding to an address. */
 struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
 {
+	//printf("mem_page_get called for addr %u\n", addr);
+	//printf("mem_page_get old log page tag: %u \n", mem->bound_logical_page_tag);
+
+	//printf("tag : %u \n", mem->bound_logical_page_tag);
 	uint32_t index, tag;
 	struct mem_page_t *prev, *page;
 
@@ -54,9 +58,17 @@ struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
 		page->next = mem->pages[index];
 		mem->pages[index] = page;
 	}
+
+	if(page==NULL) printf("Might be allocating page. \n");
+	//else printf("mem_page_get_page frame id : %d", page->frame_id);
+	//before returning make sure page has ram frame allocated
+	if(page!= NULL && page->frame_id == -1){
+		//printf("Page fault\n");
+		handle_page_fault(mem, page);
+	}
 	
 	/* Return found page */
-	return page;
+	return page;	 
 }
 
 
@@ -104,6 +116,8 @@ struct mem_page_t *mem_page_get_next(struct mem_t *mem, uint32_t addr)
 /* Create new mem page */
 static struct mem_page_t *mem_page_create(struct mem_t *mem, uint32_t addr, int perm)
 {
+
+	//printf("mem_page_create : %u\n", addr);
 	uint32_t index, tag;
 	struct mem_page_t *page;
 
@@ -119,6 +133,8 @@ static struct mem_page_t *mem_page_create(struct mem_t *mem, uint32_t addr, int 
 	page->next = mem->pages[index];
 	
 	page->swap_page_no = allocate_page(); //allocate swap page(vmm.h)
+
+	//ram_frame x = get_free_ram_frame();
 	page->frame_id = -1;
 	page->data = NULL;
 	page->valid_bit = 0;
@@ -258,6 +274,7 @@ void *mem_get_buffer(struct mem_t *mem, uint32_t addr, int size,
 static void mem_access_page_boundary(struct mem_t *mem, uint32_t addr,
 	int size, void *buf, enum mem_access_enum access)
 {
+//	printf("mem access page boundary : addr : %u\n", addr);
 	struct mem_page_t *page;
 	uint32_t offset;
 
@@ -355,9 +372,9 @@ static void mem_access_page_boundary_swap(struct mem_t *mem, uint32_t addr,
         }
 
 
-   	int disk_page = page->swap_page_no;
-   	int disk_page_start = (disk_page << MEM_LOGPAGESIZE);
-   	int disk_addr = disk_page_start + offset;
+   	uint32_t disk_page = page->swap_page_no;
+   	uint32_t disk_page_start = (disk_page << MEM_LOGPAGESIZE);
+   	uint32_t disk_addr = disk_page_start + offset;
 	/* Write/initialize access */
 	if (access == mem_access_write || access == mem_access_init) {
 		FILE *fp = fopen("Sim_disk", "rb+");
@@ -409,7 +426,7 @@ void mem_access_swap(struct mem_t *mem, uint32_t addr, int size, void *buf,
 		chunksize = MIN(size, MEM_PAGESIZE - offset);
 		//system("ls -l Sim_disk");
 
-		mem_access_page_boundary_swap(mem, addr, chunksize, buf, access);
+		mem_access_page_boundary(mem, addr, chunksize, buf, access);
 		//system("ls -l Sim_disk");
 
 		size -= chunksize;

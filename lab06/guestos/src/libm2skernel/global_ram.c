@@ -7,13 +7,14 @@ global_ram physical_ram;
 
 void init_global_ram(){
 	int i;
-	printf("init global ram : \n");
+	printf("initialising global ram .......: \n");
 	for(i=0; i<RAM_FRAMES; i++){
 		//printf("%d, ", i);
 		physical_ram.frames[i].frame_id = i;
 		physical_ram.frames[i].data = calloc(1, MEM_PAGESIZE);
 		physical_ram.frames[i].status = 0;	
 	}
+	printf("done init global ram : \n");
 }
 
 ram_frame get_free_ram_frame(){

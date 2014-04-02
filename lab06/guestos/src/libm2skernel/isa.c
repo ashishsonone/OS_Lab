@@ -541,6 +541,7 @@ void isa_dump(FILE *f)
 
 void isa_execute_inst(void *buf)
 {
+//	printf("executing instruction opcode %u\n", isa_eip);
 	if (isa_inst.opcode == op_none) {
 		unsigned char b1, b2, b3, b4;
 		mem_read(isa_mem, isa_eip, 1, &b1);
@@ -551,6 +552,8 @@ void isa_execute_inst(void *buf)
 			b1, b2, b3, b4);
 	}
 	
+
+//	printf("executing instruction debug %u\n", isa_eip);
 	/* Debug instruction */
 	if (debug_status(isa_inst_debug_category)) {
 		isa_inst_debug("%d %8lld %x: ", isa_ctx->pid,
@@ -559,12 +562,18 @@ void isa_execute_inst(void *buf)
 		isa_inst_debug("  (%d bytes)", isa_inst.size);
 	}
 
+
 	/* Execute */
 	isa_target = 0;
 	isa_regs->eip = isa_regs->eip + isa_inst.size;
+//	printf("executing instruction opcode  %d\n", isa_inst.opcode);
+
 	inst_impl_table[isa_inst.opcode]();
+//	printf("executing instruction execute %u\n", isa_eip);
+
 	inst_freq[isa_inst.opcode]++;
 
+//	printf("executing instruction debug 2 %u\n", isa_eip);
 	/* Debug */
 	isa_inst_debug("\n");
 	if (debug_status(isa_call_debug_category))
