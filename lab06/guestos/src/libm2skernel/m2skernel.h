@@ -87,11 +87,16 @@ struct mem_host_mapping_t {
 /* A 4KB page of memory */
 struct mem_page_t {
 	uint32_t tag;
-	int frame_id; //global ram frame id. (is -1 if host_mapping is done)
+	int frame_id; //global ram frame id. (is -1 if host_mapping is not done)
 	enum mem_access_enum perm;  /* Access permissions; combination of flags */
 	struct mem_page_t *next;
 	unsigned char *data; //is global ram frame's data, if host mapping not applicable
 	struct mem_host_mapping_t *host_mapping;  /* If other than null, page is host mapping */
+
+	int swap_page_no;
+	int valid_bit;
+	int dirty_bit;
+	bool isPinned;
 };
 
 struct mem_t {

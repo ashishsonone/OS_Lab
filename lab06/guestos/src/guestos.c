@@ -173,8 +173,12 @@ void set_defaults(void) {
 	tracks=atoi(param_value);
 	get_param("NUM_SECTORS",param_value);
 	sectors=atoi(param_value);
+
+    printf("heads %d, tracks %d, sectors %d\n", heads, tracks, sectors);
 	sprintf(command,"(dd if=/dev/zero of=Sim_disk bs=%dx%dx%db count=1) 2> /dev/zero",heads,tracks,sectors);
-	system(command);
+	printf("dd command executed : %s", command);
+    system(command);
+    system("ls -l Sim_disk");
 
     /* Allocate and init disk_protection_map */
     disk_protection_map_size = heads*tracks*sectors;
@@ -243,6 +247,7 @@ int main(int argc, char **argv) {
     
 	boot();
 
+
     /////	install_sighandler();
     //	printf("\n enter path:");
     //	fgets(user_prog_path,200,stdin);
@@ -262,6 +267,7 @@ int main(int argc, char **argv) {
     //argv=origargv;
     ///fgets(user_prog_path,max_path_length,stdin);
     shell();
+  
     if (*configfile) {
         ///		printf("\n Entered inside checking\n\n")	;
         opt_check_config(configfile);
@@ -283,7 +289,14 @@ int main(int argc, char **argv) {
     ///printf("\n the rcvd pa ths is %s \n",user_prog_path);
     /* Load programs from configuration file and command line. */
     ///////	if (*ctxconfig)
+
     ld_load_prog_from_ctxconfig(ctxconfig);
+
+    system("ls -l Sim_disk");
+
+    printf("Returning after loading\n");
+
+    return;
     ///////////////////if (argc >= 1)
     ///		ld_load_prog_from_cmdline(argc - 1, user_prog_path );
     ////////////		ld_load_prog_from_cmdline(argc - 1, argv + 1);

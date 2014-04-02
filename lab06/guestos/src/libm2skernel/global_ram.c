@@ -9,7 +9,7 @@ void init_global_ram(){
 	int i;
 	printf("init global ram : \n");
 	for(i=0; i<RAM_FRAMES; i++){
-		printf("%d, ", i);
+		//printf("%d, ", i);
 		physical_ram.frames[i].frame_id = i;
 		physical_ram.frames[i].data = calloc(1, MEM_PAGESIZE);
 		physical_ram.frames[i].status = 0;	

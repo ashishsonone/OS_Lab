@@ -107,7 +107,7 @@ static struct mem_page_t *mem_page_create(struct mem_t *mem, uint32_t addr, int 
 	uint32_t index, tag;
 	struct mem_page_t *page;
 
-	tag = addr & ~(MEM_PAGESIZE - 1);
+	tag = addr & ~(MEM_PAGESIZE - 1); //tag is actually (logical page number * page_size)
 	index = (addr >> MEM_LOGPAGESIZE) % MEM_PAGE_COUNT;
 	
 	/* Create new page */
@@ -118,9 +118,12 @@ static struct mem_page_t *mem_page_create(struct mem_t *mem, uint32_t addr, int 
 	/* Insert in pages hash table */
 	page->next = mem->pages[index];
 	
-	ram_frame temp_frame = get_free_ram_frame();
-	page->frame_id = temp_frame.frame_id;
-	page->data = temp_frame.data;
+	page->swap_page_no = allocate_page(); //allocate swap page(vmm.h)
+	page->frame_id = -1;
+	page->data = NULL;
+	page->valid_bit = 0;
+	page->dirty_bit = 0;
+	page->isPinned = 0;
 
 	mem->pages[index] = page;
 	mem_mapped_space += MEM_PAGESIZE;
@@ -311,6 +314,66 @@ static void mem_access_page_boundary(struct mem_t *mem, uint32_t addr,
 	abort();
 }
 
+/* Access memory without exceeding page boundaries. 
+	used only during loading of pages into swap 
+*/
+static void mem_access_page_boundary_swap(struct mem_t *mem, uint32_t addr,
+	int size, void *buf, enum mem_access_enum access)
+{
+	if(access != mem_access_init){
+		printf("Access should be mem_access_init\n");
+		exit(0);
+	}
+
+	//access = mem_access_init
+	struct mem_page_t *page;
+	uint32_t offset;
+
+	/* Find memory page and compute offset. */
+	page = mem_page_get(mem, addr);
+	offset = addr & (MEM_PAGESIZE - 1);
+	assert(offset + size <= MEM_PAGESIZE);
+
+	/* On nonexistent page, raise segmentation fault in safe mode,
+	 * or create page with full privileges for writes in unsafe mode. */
+	if (!page) {
+		printf("mem_acc page boundaries (swap) : Should not come here as mem map called before\n" );
+		//THIS won't happen as mem_map is called before calling this
+		if (mem->safe)
+			fatal("illegal access at 0x%x: page not allocated", addr);
+		if (access == mem_access_write || access == mem_access_init)
+			page = mem_page_create(mem, addr, mem_access_read |
+				mem_access_write | mem_access_exec |
+				mem_access_init);
+	}
+	assert(page);
+
+	/* Check permissions in safe mode */
+	if (mem->safe && (page->perm & access) != access){
+		//fatal("mem_access: permission denied at 0x%x", addr);
+            raise(SIGSEGV);
+        }
+
+
+   	int disk_page = page->swap_page_no;
+   	int disk_page_start = (disk_page << MEM_LOGPAGESIZE);
+   	int disk_addr = disk_page_start + offset;
+	/* Write/initialize access */
+	if (access == mem_access_write || access == mem_access_init) {
+		FILE *fp = fopen("Sim_disk", "rb+");
+	    if(fp == NULL){
+	        printf("Couldn't open HardDisk access swap boundary");
+	        exit(0);
+	    }
+	    fseek(fp, disk_addr, SEEK_SET);
+	    fwrite(buf, size, 1, fp);
+	    fclose(fp);
+		return;
+	}
+
+	/* Shouldn't get here. */
+	abort();
+}
 
 /* Access mem at address 'addr'.
  * This access can cross page boundaries. */
@@ -325,6 +388,29 @@ void mem_access(struct mem_t *mem, uint32_t addr, int size, void *buf,
 		offset = addr & (MEM_PAGESIZE - 1);
 		chunksize = MIN(size, MEM_PAGESIZE - offset);
 		mem_access_page_boundary(mem, addr, chunksize, buf, access);
+
+		size -= chunksize;
+		buf += chunksize;
+		addr += chunksize;
+	}
+}
+
+/* Access mem at address 'addr'.
+ * This access can cross page boundaries. */
+void mem_access_swap(struct mem_t *mem, uint32_t addr, int size, void *buf,
+	enum mem_access_enum access)
+{
+	uint32_t offset;
+	int chunksize;
+
+	mem->last_address = addr;
+	while (size) {
+		offset = addr & (MEM_PAGESIZE - 1);
+		chunksize = MIN(size, MEM_PAGESIZE - offset);
+		//system("ls -l Sim_disk");
+
+		mem_access_page_boundary_swap(mem, addr, chunksize, buf, access);
+		//system("ls -l Sim_disk");
 
 		size -= chunksize;
 		buf += chunksize;
@@ -629,7 +715,7 @@ void mem_zero(struct mem_t *mem, uint32_t addr, int size)
 }
 
 
-void mem_dump(struct mem_t *mem, char *filename, uint32_t start, uint32_t end)
+void mem_dump(struct mem_t *mem, char *filename, uint32_t start, uint32_t end) //NEVERCALLED
 {
 	FILE *f;
 	uint32_t size;
@@ -654,7 +740,7 @@ void mem_dump(struct mem_t *mem, char *filename, uint32_t start, uint32_t end)
 }
 
 
-void mem_load(struct mem_t *mem, char *filename, uint32_t start)
+void mem_load(struct mem_t *mem, char *filename, uint32_t start)//NEVERCALLED
 {
 	FILE *f;
 	uint32_t size;

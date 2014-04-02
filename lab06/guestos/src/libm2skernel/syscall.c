@@ -907,7 +907,7 @@ int handle_guest_syscalls() {
             */
             FILE *fp = fopen("Sim_disk", "rb+");
             if(fp == NULL){
-                printf("Couldn't open HardDisk");
+                printf("Couldn't open HardDisk syscall");
                 break;
             }
 
@@ -2683,7 +2683,7 @@ void syscall_do() {
                     fatal("syscall mremap: out of memory");
                 mem_map(isa_mem, new_addr, new_len,
                         mem_access_read | mem_access_write);
-                mem_copy(isa_mem, new_addr, addr, MIN(old_len, new_len));
+                mem_copy(isa_mem, new_addr, addr, MIN(old_len, new_len)); //PAGEFAULTCANDIDATE - just one page
                 mem_unmap(isa_mem, addr, old_len);
                 retval = new_addr;
                 break;

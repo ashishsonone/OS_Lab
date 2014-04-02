@@ -202,10 +202,10 @@ void ctx_execute_inst(struct ctx_t *ctx)
 	ctx->mem->safe = mem_safe_mode;
 	if (ctx_get_status(ctx, ctx_specmode))
 		ctx->mem->safe = 0;
-	buf = mem_get_buffer(ctx->mem, ctx->regs->eip, 20, mem_access_exec);
+	buf = mem_get_buffer(ctx->mem, ctx->regs->eip, 20, mem_access_exec); //PAGEFAULTCANDIDATE - just one page
 	if (!buf) {
 		buf = &fixed;
-		mem_access(ctx->mem, ctx->regs->eip, 20, buf, mem_access_exec);
+		mem_access(ctx->mem, ctx->regs->eip, 20, buf, mem_access_exec);  //PAGEFAULTCANDIDATE - just one page
 	}
 	ctx->mem->safe = mem_safe_mode;
 

@@ -191,7 +191,7 @@ void ld_load_sections(struct ctx_t *ctx, struct elf_file_t *elf)
 			ld->brk = MAX(ld->brk, addr + size);
 			ld->bottom = MIN(ld->bottom, addr);
 			buf = elf_section_read(elf, i);
-			mem_access(mem, addr, size, buf, mem_access_init);
+			mem_access_swap(mem, addr, size, buf, mem_access_init); //CHANGE
 			elf_free_buffer(buf);
 		}
 	}
