@@ -31,6 +31,7 @@ ram_frame get_free_ram_frame(){
 }
 
 void release_ram_frame(int frame_id){
+	printf("release_ram_frame : freeing ram frame # %d\n", frame_id);
 	if(frame_id < 0 || frame_id >= RAM_FRAMES){
 		printf("Frame id out of bounds\n");
 		exit(0);

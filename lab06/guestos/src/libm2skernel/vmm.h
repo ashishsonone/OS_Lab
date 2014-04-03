@@ -25,3 +25,5 @@ struct allocated_frame* get_free_allocated_frame(struct mem_t* mem );
 
 void page_out(struct mem_t *mem, struct mem_page_t* old_page);
 void allocate_initial_frames(struct mem_t* mem);
+void free_allocated_frame_from_queue(struct mem_t* mem, uint32_t tag);
+void release_all_allocated_frames_to_system(struct mem_t* mem );
