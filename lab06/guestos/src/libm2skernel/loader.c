@@ -19,6 +19,7 @@
 
 #include "m2skernel.h"
 
+
 int ld_debug_category;
 
 int LOADINGPHASE;
@@ -175,9 +176,7 @@ void ld_load_sections(struct ctx_t *ctx, struct elf_file_t *elf)
 	ld->bottom = 0xffffffff;
 	count = elf_section_count(elf);
 
-	mem->bound_logical_page_tag = -1;
-	mem->allocated = get_free_ram_frame();
-			
+	allocate_initial_frames(mem); // allocates initial ram frames to the process
 
 	for (i = 0; i < count; i++) {
 		elf_section_info(elf, i, &name, &addr, &size, &flags);

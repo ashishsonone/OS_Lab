@@ -52,10 +52,10 @@ void write_swap_page(char * buff, uint32_t swap_page_addr){
     fclose(fp);
 }
 
-allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
-	allocated_frame* head = allocated_frames_head;
+struct allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
+	struct allocated_frame* head = mem->allocated_frames_head;
 	while(head!=NULL){
-		if(head->bounded_logical_tag==-1){
+		if(head->logical_page==NULL){
 			printf("No need to page out.");
 			return head;
 		}
@@ -63,9 +63,9 @@ allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
 	return NULL;
 }
 
-void page_out(struct mem_t *mem, mem_page_t* old_page){
+void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 	if(old_page==NULL){
-		printf("Error : old page cannot be NULL in page out\n", );
+		printf("Error : old page cannot be NULL in page out\n"	);
 		exit(0);
 	}
 	old_page->dirty_bit=1;// for testing
@@ -94,11 +94,9 @@ void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 	}
 
 	if(isa_ctx == NULL)
-		printf("isa_ctx NULL ; Page Fault new: %u , old: %u ; ", page->tag,
-		free_frame->logical_page->tag ); 
+		printf("isa_ctx NULL ; Page Fault new: %u , old: %u ; ", page->tag,	free_frame->logical_page->tag ); 
 	else 
-		printf("pid : %d, uid : %d ; Page Fault new: %u , old:
-		%u ; ",isa_ctx->pid, isa_ctx->uid, page->tag, free_frame->logical_page->tag );
+		printf("pid : %d, uid : %d ; Page Fault new: %u , old:	%u ; ",isa_ctx->pid, isa_ctx->uid, page->tag, free_frame->logical_page->tag );
 
 
 	printf("  Page in: %u\n", page->tag);
@@ -112,6 +110,30 @@ void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 	enqueue_frame(mem,free_frame);
 
 }
+
+void push_to_allocated_frames(struct mem_t* mem){
+	allocated_frame* node = (allocated_frame*) malloc(sizeof(struct allocated_frame));
+	node->frame = get_free_ram_frame();
+	node->logical_page = NULL;
+
+	if(mem->allocated_frames_head==NULL){
+		mem->allocated_frames_head = node;
+		mem->allocated_frames_head->next = NULL;
+	}
+	else{
+		node->next = mem->allocated_frames_head;
+		mem->allocated_frames_head = node;
+	}
+}
+
+void allocate_initial_frames(struct mem_t* mem){
+	// initial_page_frame_count
+	int i=0;
+	for(i=0;i<initial_page_frame_count;i++){
+		push_to_allocated_frames(mem);		
+	}
+}
+
 /*
 int main(){
 	init_vmm();

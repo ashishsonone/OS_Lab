@@ -49,6 +49,7 @@ struct ctx_t;
 struct fd_t;
 
 int instr_slice;
+int initial_page_frame_count;
 
 /* Maximum length for paths */
 #define MAX_PATH_SIZE  200
@@ -103,9 +104,11 @@ struct mem_page_t {
 
 typedef struct allocated_frame{
 	ram_frame frame;
-	mem_page_t* logical_page; 
+	struct mem_page_t* logical_page; 
 	struct allocated_frame* next;
 } allocated_frame;
+
+
 
 struct mem_t {
 	struct mem_page_t *pages[MEM_PAGE_COUNT];
@@ -114,8 +117,8 @@ struct mem_t {
 	int safe;  /* Safe mode */
 	struct mem_host_mapping_t *host_mapping_list;  /* List of host mappings */
 	
+	allocated_frame* fifo_queue; 
 	allocated_frame* allocated_frames_head;
-
 };
 
 

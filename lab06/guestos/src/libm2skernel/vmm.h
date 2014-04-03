@@ -21,4 +21,7 @@ void read_swap_page(char * buf, uint32_t swap_page_addr);
 void write_swap_page(char * buf, uint32_t swap_page_addr);
 
 void handle_page_fault(struct mem_t *mem, struct mem_page_t* page);
-allocated_frame* get_free_allocated_frame(struct mem_t* mem );
+struct allocated_frame* get_free_allocated_frame(struct mem_t* mem );
+
+void page_out(struct mem_t *mem, struct mem_page_t* old_page);
+void allocate_initial_frames(struct mem_t* mem);
