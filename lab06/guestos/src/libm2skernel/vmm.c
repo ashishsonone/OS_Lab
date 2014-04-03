@@ -48,44 +48,68 @@ void write_swap_page(char * buff, uint32_t swap_page_addr){
         exit(0);
     }
     fseek(fp, start_byte, SEEK_SET);
-    fwrite(buff, MEM_PAGESIZE, 1, fp);
+    fwrite(buff, MEM_PAGESIZE, 1, fp); 
     fclose(fp);
 }
 
-void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
-	uint32_t old_tag = mem->bound_logical_page_tag; // tag is the logical page no. 
-
-	printf("Page Fault new: %u , old: %u ::: ",page->tag, old_tag );
-
-	//printf("tag inside handle_page_fault : %u \n", mem->bound_logical_page_tag);
-	if(old_tag!=-1){
-		struct mem_page_t * old_page = mem_page_get(mem,old_tag);
-		// write this page back to swap if it has become dirty
-		old_page->dirty_bit=1;// for testing
-		if(old_page->dirty_bit==1){	
-			printf("Page out :%u",old_page->tag);	
-			uint32_t disk_page = old_page->swap_page_no;
-			unsigned char* buff = old_page->data;
-			write_swap_page(buff,disk_page);
+allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
+	allocated_frame* head = allocated_frames_head;
+	while(head!=NULL){
+		if(head->bounded_logical_tag==-1){
+			printf("No need to page out.");
+			return head;
 		}
-		mem->bound_logical_page_tag = -1;
-		old_page->frame_id = -1;
-	//	printf("reset frameid -1\n");
-		old_page->data = NULL;
-		old_page->dirty_bit=0;
+	}
+	return NULL;
+}
+
+void page_out(struct mem_t *mem, mem_page_t* old_page){
+	if(old_page==NULL){
+		printf("Error : old page cannot be NULL in page out\n", );
+		exit(0);
+	}
+	old_page->dirty_bit=1;// for testing
+	printf("setting dirty bit = 1 for testing\n");
+	if(old_page->dirty_bit==1){	
+		printf("Page out :%u",old_page->tag);	
+		uint32_t disk_page = old_page->swap_page_no;
+		unsigned char* buff = old_page->data;
+		write_swap_page(buff,disk_page);
+	}
+	old_page->frame_id = -1;
+	old_page->data = NULL;
+	old_page->dirty_bit=0;
+}
+
+
+
+void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
+
+	printf("Handling page fault..\n");
+	allocated_frame* free_frame = get_free_allocated_frame(mem);
+	if(free_frame==NULL){
+		free_frame = dequeue_frame(mem); // dequeue will remove from queue itself
+		page_out(mem, free_frame->logical_page);
+		free_frame->logical_page = NULL;
 	}
 
-	//printf("settinging frameid -1\n");
+	if(isa_ctx == NULL)
+		printf("isa_ctx NULL ; Page Fault new: %u , old: %u ; ", page->tag,
+		free_frame->logical_page->tag ); 
+	else 
+		printf("pid : %d, uid : %d ; Page Fault new: %u , old:
+		%u ; ",isa_ctx->pid, isa_ctx->uid, page->tag, free_frame->logical_page->tag );
+
+
 	printf("  Page in: %u\n", page->tag);
-	page->frame_id = mem->allocated.frame_id;
-	page->data = mem->allocated.data;
+	page->frame_id = (free_frame->frame).frame_id;
+	page->data = (free_frame->frame).data;
 	page->dirty_bit=0;
 	uint32_t disk_page = page->swap_page_no;
 	read_swap_page(page->data, disk_page);
 	page->valid_bit=1;	
-
-	mem->bound_logical_page_tag = page->tag; 
-	//printf("Swapping in done with new tag %u!\n", mem->bound_logical_page_tag);
+	free_frame->logical_page = page; 
+	enqueue_frame(mem,free_frame);
 
 }
 /*

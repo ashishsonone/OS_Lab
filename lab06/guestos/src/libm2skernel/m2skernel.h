@@ -101,15 +101,24 @@ struct mem_page_t {
 	bool isPinned;
 };
 
+typedef struct allocated_frame{
+	ram_frame frame;
+	mem_page_t* logical_page; 
+	struct allocated_frame* next;
+} allocated_frame;
+
 struct mem_t {
 	struct mem_page_t *pages[MEM_PAGE_COUNT];
 	int sharing;  /* Number of contexts sharing memory map */
 	uint32_t last_address;  /* Address of last access */
 	int safe;  /* Safe mode */
 	struct mem_host_mapping_t *host_mapping_list;  /* List of host mappings */
-	ram_frame allocated;
-	uint32_t bound_logical_page_tag;
+	
+	allocated_frame* allocated_frames_head;
+
 };
+
+
 
 extern unsigned long mem_mapped_space;
 extern unsigned long mem_max_mapped_space;

@@ -9,9 +9,9 @@
 typedef struct ram_frame{
 	unsigned char * data;
 	int frame_id;
-	int status; //0 free, 1 busy
+	int status; //if 1, then it is allocated to some process. process may/may not contain in this frame
 }ram_frame;
-
+ 
 typedef struct global_ram{
 	ram_frame frames[RAM_FRAMES];
 }global_ram;
