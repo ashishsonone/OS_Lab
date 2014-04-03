@@ -73,7 +73,8 @@ am_libm2skernel_a_OBJECTS = isa.$(OBJEXT) context.$(OBJEXT) \
 	m2skernel.$(OBJEXT) machine.$(OBJEXT) machine-ctrl.$(OBJEXT) \
 	machine-fp.$(OBJEXT) machine-rot.$(OBJEXT) \
 	machine-std.$(OBJEXT) machine-str.$(OBJEXT) memory.$(OBJEXT) \
-	regs.$(OBJEXT) signal.$(OBJEXT) syscall.$(OBJEXT) hello.$(OBJEXT) global_ram.$(OBJEXT) vmm.$(OBJEXT)
+	regs.$(OBJEXT) signal.$(OBJEXT) syscall.$(OBJEXT) hello.$(OBJEXT) \
+	global_ram.$(OBJEXT) vmm.$(OBJEXT) fifo_queue.$(OBJEXT)
 libm2skernel_a_OBJECTS = $(am_libm2skernel_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -200,6 +201,7 @@ libm2skernel_a_SOURCES = m2skernel.h \
 	hello.c \
 	vmm.c \
 	global_ram.c \
+	fifo_queue.c \
 	syscall.dat
 
 AM_CFLAGS = -Wall -fno-strict-aliasing -m32
@@ -306,6 +308,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hello.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vmm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_ram.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fifo_queue.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

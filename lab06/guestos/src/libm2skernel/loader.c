@@ -177,6 +177,7 @@ void ld_load_sections(struct ctx_t *ctx, struct elf_file_t *elf)
 	count = elf_section_count(elf);
 
 	allocate_initial_frames(mem); // allocates initial ram frames to the process
+	mem->fifo_queue_head = NULL;
 
 	for (i = 0; i < count; i++) {
 		elf_section_info(elf, i, &name, &addr, &size, &flags);

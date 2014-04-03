@@ -102,13 +102,16 @@ struct mem_page_t {
 	bool isPinned;
 };
 
-typedef struct allocated_frame{
+typedef struct allocated_frame {
 	ram_frame frame;
 	struct mem_page_t* logical_page; 
 	struct allocated_frame* next;
 } allocated_frame;
 
-
+struct queue_node {
+	struct allocated_frame * page_eqv;
+	struct queue_node * prev, * next;
+};
 
 struct mem_t {
 	struct mem_page_t *pages[MEM_PAGE_COUNT];
@@ -117,10 +120,9 @@ struct mem_t {
 	int safe;  /* Safe mode */
 	struct mem_host_mapping_t *host_mapping_list;  /* List of host mappings */
 	
-	allocated_frame* fifo_queue; 
-	allocated_frame* allocated_frames_head;
+	struct queue_node* fifo_queue_head; 
+	struct allocated_frame* allocated_frames_head;
 };
-
 
 
 extern unsigned long mem_mapped_space;

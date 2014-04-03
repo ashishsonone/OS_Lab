@@ -1,14 +1,18 @@
+#include "fifo_queue.h"
 
-struct queue_node
+void print_queue (struct mem_t* mem)
 {
-	struct allocated_frame * page_eqv;
-	struct queue_node * prev, * next;
-};
+	struct queue_node * curr = uhead;
+	while (curr != NULL)
+	{
+		printf ("%d", curr->page_eqv->logical_page);
+		if ((curr = curr->next))
+			printf (", ");
+	}
+	printf ("\n");
+}
 
-// To avoid name clash: {Unique} HEAD
-#define uhead mem->fifo_queue_head
-
-void enqueue (struct mem_t* mem, allocated_frame* next)
+void enqueue_frame (struct mem_t* mem, struct allocated_frame* next)
 {
 	// Create the next node.
 	struct queue_node* new_node = (struct queue_node*) calloc (1, sizeof (struct queue_node));
@@ -33,9 +37,11 @@ void enqueue (struct mem_t* mem, allocated_frame* next)
 		new_node->prev = temp;
 		temp->next = new_node;
 	}
+
+	printf ("enqueue_frame : %d\n", next->logical_page); // print_queue (mem);
 }
 
-allocated_frame* dequeue (struct mem_t* mem)
+struct allocated_frame* dequeue_frame (struct mem_t* mem)
 {
 	struct queue_node * curr = uhead;
 
@@ -43,8 +49,9 @@ allocated_frame* dequeue (struct mem_t* mem)
 	while (curr != NULL)
 	{
 		// Check if (corresponding) page is pinned.
-		if (curr->page_eqv->logical_page->pinned)
+		if (curr->page_eqv->logical_page->isPinned)
 		{
+			printf ("dequeue_frame : skipping pinned page\n"); // print_queue (mem);
 			curr = curr->next;
 			continue;
 		}
@@ -56,14 +63,16 @@ allocated_frame* dequeue (struct mem_t* mem)
 		// Return first unpinned page equivalent.
 		allocated_frame * res = curr->page_eqv;
 
+		// Fix head if only node in queue.
+		if (uhead == curr) uhead = curr->next;
+		
 		// Free up memory.
 		free (curr);
 
-		// Fix head if only node in queue.
-		if (uhead == curr) uhead = NULL;
-
+		printf ("dequeue_frame : %d\n", res->logical_page); // print_queue (mem);
 		return res;
 	}
 
+	printf ("dequeue_frame : no frame in queue\n"); // print_queue (mem);
 	return NULL;
 }

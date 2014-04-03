@@ -59,6 +59,7 @@ struct allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
 			printf("No need to page out.");
 			return head;
 		}
+		head = head->next;
 	}
 	return NULL;
 }
@@ -69,7 +70,7 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 		exit(0);
 	}
 	old_page->dirty_bit=1;// for testing
-	printf("setting dirty bit = 1 for testing\n");
+	//printf("setting dirty bit = 1 for testing\n");
 	if(old_page->dirty_bit==1){	
 		printf("Page out :%u",old_page->tag);	
 		uint32_t disk_page = old_page->swap_page_no;
@@ -85,19 +86,32 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 
 void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 
-	printf("Handling page fault..\n");
+	printf("Page Fault ::: ");
+
+	if(isa_ctx == NULL)
+		printf("isa_ctx NULL ; new: %u ", page->tag); 
+	else 
+		printf("pid : %d, uid : %d ; new: %u ",isa_ctx->pid, isa_ctx->uid, page->tag);
+
+	printf("\n");
+
 	allocated_frame* free_frame = get_free_allocated_frame(mem);
 	if(free_frame==NULL){
 		free_frame = dequeue_frame(mem); // dequeue will remove from queue itself
-		page_out(mem, free_frame->logical_page);
-		free_frame->logical_page = NULL;
+
+		if(free_frame==NULL){
+			// all the pages are pinned. Allocate new frames to the process.
+			printf("All pages are pinned. New allocation to be done\n");
+			exit(0);
+		}
+		else{
+			page_out(mem, free_frame->logical_page);
+			printf("old : %u ", free_frame->logical_page->tag);
+			free_frame->logical_page = NULL;
+		}
 	}
 
-	if(isa_ctx == NULL)
-		printf("isa_ctx NULL ; Page Fault new: %u , old: %u ; ", page->tag,	free_frame->logical_page->tag ); 
-	else 
-		printf("pid : %d, uid : %d ; Page Fault new: %u , old:	%u ; ",isa_ctx->pid, isa_ctx->uid, page->tag, free_frame->logical_page->tag );
-
+	////
 
 	printf("  Page in: %u\n", page->tag);
 	page->frame_id = (free_frame->frame).frame_id;

@@ -324,6 +324,7 @@ static void mem_access_page_boundary(struct mem_t *mem, uint32_t addr,
 		if (!page->data)
 			page->data = calloc(1, MEM_PAGESIZE);
 		memcpy(page->data + offset, buf, size);
+		page->dirty_bit=1;
 		return;
 	}
 
