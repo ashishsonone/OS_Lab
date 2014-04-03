@@ -1,58 +1,69 @@
-struct page_node {
-	struct mem_page_t *page;
-	struct page_node *prev;
-	struct page_node *next;
+
+struct queue_node
+{
+	struct allocated_frame * page_eqv;
+	struct queue_node * prev, * next;
 };
 
-void insert_node(struct mem_t* mem, int addr) {
-	struct page_node *node = (struct page_node*) calloc(1, sizeof(struct page_node));
-	node->page = mem_page_get(mem,addr);
-	node->prev = NULL;
-	node->next = NULL;
-	if(mem->head == NULL)
-		mem->head = node;
-	else {
-		struct page_node* temp = mem->head;
-		while(temp->next != NULL)
+// To avoid name clash: {Unique} HEAD
+#define uhead mem->fifo_queue_head
+
+void enqueue (struct mem_t* mem, allocated_frame* next)
+{
+	// Create the next node.
+	struct queue_node* new_node = (struct queue_node*) calloc (1, sizeof (struct queue_node));
+	// Set the next node to point to given page equivalent.
+	new_node->page_eqv = next;
+	new_node->next = NULL;
+
+	if (uhead == NULL)
+	{
+		// Enqueue at the uhead of [empty] queue.
+		new_node->prev = NULL;
+		uhead = new_node;
+	}
+	else
+	{
+		// Reach the last node.
+		struct queue_node* temp = uhead;
+		while (temp->next != NULL)
 			temp = temp->next;
-		temp->next = node;
-		node->prev = temp;
+
+		// Enqueue after the temp node.
+		new_node->prev = temp;
+		temp->next = new_node;
 	}
 }
 
-//not accounted for all_pinned yet.
-//free list insertion
-void delete_node(struct mem_t* mem){
-	if(mem->head == NULL){
-		//error msg?
-		return;
+allocated_frame* dequeue (struct mem_t* mem)
+{
+	struct queue_node * curr = uhead;
+
+	// Check if any node (effectively, page) exists in queue.
+	while (curr != NULL)
+	{
+		// Check if (corresponding) page is pinned.
+		if (curr->page_eqv->logical_page->pinned)
+		{
+			curr = curr->next;
+			continue;
+		}
+
+		// Change the links in the queue.
+		if (curr->prev != NULL) curr->prev->next = curr->next;
+		if (curr->next != NULL) curr->next->prev = curr->prev;
+
+		// Return first unpinned page equivalent.
+		allocated_frame * res = curr->page_eqv;
+
+		// Free up memory.
+		free (curr);
+
+		// Fix head if only node in queue.
+		if (uhead == curr) uhead = NULL;
+
+		return res;
 	}
 
-	else if(mem->head->next == NULL && mem->head->page->pinned == 0){
-		//free list insertion, dirty pages, set page to not valid(assuming a valid int as 0 or 1) anymore
-		mem->head->page->valid = 0;
-		free(mem->head);
-		mem->head = NULL;
-	}
-	else{
-		struct page_node* temp = mem->head;
-		int all_pinned = 1;
-		while(temp != NULL){
-			if(temp->page->pinned == 1)
-				temp=temp->next;
-			else if(temp->page->pinned == 0){
-				all_pinned = 0;
-				//free list insertion, dirty pages, set page to not valid(assuming a valid int as 0 or 1) anymore
-				temp->page->valid = 0;
-				temp->prev->next = temp->next;
-				temp->next->prev = temp->prev;
-				free(temp);
-				return;
-			}
-		}
-		if(all_pinned == 1){
-			//What to do in this case?
-		}
-	}
+	return NULL;
 }
-
