@@ -1,0 +1,6 @@
+1. Pinning sys calls
+2. TLB
+3. Deallocation of frames when process exits- done
+4. Deallocation of swap page - done
+5. mem_page_get_next() function to be modified
+6. 
