@@ -151,6 +151,11 @@ static struct mem_page_t *mem_page_create(struct mem_t *mem, uint32_t addr, int 
 /* Free mem pages */
 static void mem_page_free(struct mem_t *mem, uint32_t addr)
 {
+	//This means that this logical page will never be used again.
+	//So we can free the swap page associated with it
+
+	//NOTEIMP : we must also release the associated "allocated_frame" if any
+
 	uint32_t index, tag;
 	struct mem_page_t *prev, *page;
 	struct mem_host_mapping_t *hm;
@@ -187,11 +192,22 @@ static void mem_page_free(struct mem_t *mem, uint32_t addr)
 	else
 		mem->pages[index] = page->next;
 	mem_mapped_space -= MEM_PAGESIZE;
+	/*
 	if (page->data){
-		if(page->frame_id != -1) release_ram_frame(page->frame_id);//TODO dont free this
+		if(page->frame_id != -1){
+			printf("mem_page_free - addr: %u\n", addr);
+			//release_ram_frame(page->frame_id);//TODO don't release ram frame,
+											// instead release the associated swap page
+			
+		}
 		page->data = NULL; //now this ram frame no longer belongs to this
 	}
-	
+	*/
+
+	//Deallcate the swap page associated
+	//Nothing to do with the ram frames. They will be released in void mem_free(struct mem_t *mem)
+	deallocate_page(page->swap_page_no);
+	release_allocated_frame(mem, tag);
 	free(page);
 }
 
@@ -460,6 +476,13 @@ void mem_free(struct mem_t *mem)
 	/* This must have released all host mappings.
 	 * Now, free memory structure. */
 	assert(!mem->host_mapping_list);
+
+	//Free the allocated ram frames
+	release_all_allocated_frames_to_system(mem);
+
+	//assert that both queue and alloc_frame list are NULL
+	if(mem->allocated_frames_head != NULL) printf("allocated_frames_head should be NULL at end of mem_free()\n");
+	if(mem->fifo_queue_head != NULL) printf("fifo_queue_head should be NULL at end of mem_free()\n");
 	free(mem);
 }
 

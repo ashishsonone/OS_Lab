@@ -17,10 +17,12 @@ uint32_t allocate_page(){
 	addr = last_allocated_swap;
 	last_allocated_swap+= 1;
 	//printf("returning swap page number %d\n", addr);
+	printf(" allocate swap page # %d\n", addr);
 	return addr;
 }
 
 uint32_t deallocate_page(uint32_t swap_page_addr){
+	printf(" deallocate swap page # %d\n", swap_page_addr);
 	hole * new_head = (hole *) malloc(sizeof(hole));
 	new_head->disk_addr = swap_page_addr;
 	new_head->next = hole_list_start;
@@ -56,12 +58,37 @@ struct allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
 	struct allocated_frame* head = mem->allocated_frames_head;
 	while(head!=NULL){
 		if(head->logical_page==NULL){
-			printf("No need to page out.");
+			//printf("No need to page out.");
 			return head;
 		}
 		head = head->next;
 	}
 	return NULL;
+}
+
+//release all allocated ram frames permanently calling "release_ram_frame()" each time
+void release_all_allocated_frames_to_system(struct mem_t* mem ){
+	struct allocated_frame* old;
+	while(mem->allocated_frames_head!=NULL){
+		release_ram_frame(mem->allocated_frames_head->frame.frame_id); //release the ram frame
+		old = mem->allocated_frames_head;
+		mem->allocated_frames_head = old->next;
+		free(old); //free old allocated_frame struct pointed to by old
+	}
+}
+
+//release allocated frame corr to given logical tag
+//i.e remove entry from fifo queue & update its status(allocated_frame->logical_page = NULL)
+void release_allocated_frame(struct mem_t* mem, uint32_t tag){
+	//	 So need fifo_queue functions to remove the entry
+	//       i.e  delete the entry s.t [queue_ptr->page_eqv->logical_page->tag == giventag]
+	//				and return the entry  (if any)
+	//     allocated_frame * deque_this_allocated_frame(struct mem_t* mem, uint32_t tag)
+	allocated_frame* target_frame = deque_this_allocated_frame(mem, tag);
+	if(target_frame != NULL){
+		printf("release_allocated_frame : tag %u \n", tag);
+		target_frame->logical_page = NULL; //Now its free to be reused
+	}
 }
 
 void page_out(struct mem_t *mem, struct mem_page_t* old_page){
@@ -72,7 +99,7 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 	old_page->dirty_bit=1;// for testing
 	//printf("setting dirty bit = 1 for testing\n");
 	if(old_page->dirty_bit==1){	
-		printf("Page out :%u",old_page->tag);	
+		printf("Page out :%u ",old_page->tag);	
 		uint32_t disk_page = old_page->swap_page_no;
 		unsigned char* buff = old_page->data;
 		write_swap_page(buff,disk_page);
@@ -105,10 +132,13 @@ void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 			exit(0);
 		}
 		else{
+			printf("old : %u ; ", free_frame->logical_page->tag);
 			page_out(mem, free_frame->logical_page);
-			printf("old : %u ", free_frame->logical_page->tag);
 			free_frame->logical_page = NULL;
 		}
+	}
+	else{
+		printf("old : NULL ; Page out :None " );
 	}
 
 	////

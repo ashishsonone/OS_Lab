@@ -5,7 +5,7 @@ void print_queue (struct mem_t* mem)
 	struct queue_node * curr = uhead;
 	while (curr != NULL)
 	{
-		printf ("%d", curr->page_eqv->logical_page);
+		printf ("%u", curr->page_eqv->logical_page->tag);
 		if ((curr = curr->next))
 			printf (", ");
 	}
@@ -38,7 +38,7 @@ void enqueue_frame (struct mem_t* mem, struct allocated_frame* next)
 		temp->next = new_node;
 	}
 
-	printf ("enqueue_frame : %d\n", next->logical_page); // print_queue (mem);
+	printf ("enqueue_frame : %u\n", next->logical_page->tag); // print_queue (mem);
 }
 
 struct allocated_frame* dequeue_frame (struct mem_t* mem)
@@ -69,10 +69,46 @@ struct allocated_frame* dequeue_frame (struct mem_t* mem)
 		// Free up memory.
 		free (curr);
 
-		printf ("dequeue_frame : %d\n", res->logical_page); // print_queue (mem);
+		printf ("dequeue_frame : %u\n", res->logical_page->tag); // print_queue (mem);
 		return res;
 	}
 
 	printf ("dequeue_frame : no frame in queue\n"); // print_queue (mem);
+	return NULL;
+}
+
+struct allocated_frame * deque_this_allocated_frame(struct mem_t* mem, uint32_t tag)
+{
+	struct queue_node * curr = uhead;
+
+	// Check if any node (effectively, page) exists in queue.
+	while (curr != NULL)
+	{
+		// Check if (corresponding) page is pinned.
+		if (curr->page_eqv->logical_page->tag != tag) 
+		{
+			//page with the tag not yet found
+			//printf ("dequeue_frame : skipping pinned page\n"); // print_queue (mem);
+			curr = curr->next;
+			continue;
+		}
+
+		// Change the links in the queue.
+		if (curr->prev != NULL) curr->prev->next = curr->next;
+		if (curr->next != NULL) curr->next->prev = curr->prev;
+
+		allocated_frame * res = curr->page_eqv;
+
+		// Fix head if only node in queue.
+		if (uhead == curr) uhead = curr->next;
+		
+		// Free up memory.
+		free (curr);
+
+		//printf ("deque_this_allocated_frame : found tag %d\n", res->logical_page); // print_queue (mem);
+		return res;
+	}
+
+	//printf ("deque_this_allocated_frame : no frame with given tag\n"); // print_queue (mem);
 	return NULL;
 }
