@@ -30,6 +30,25 @@ int mem_safe_mode = 1;
 int *disk_protection_map;
 int disk_protection_map_size; //=no of blocks
 
+struct mem_page_t *page_table_lookup(struct mem_t* mem, uint32_t addr){
+	uint32_t index, tag;
+	struct mem_page_t *prev, *page;
+
+	tag = addr & ~(MEM_PAGESIZE - 1);
+	index = (addr >> MEM_LOGPAGESIZE) % MEM_PAGE_COUNT;
+	page = mem->pages[index];
+	prev = NULL;
+	
+	/* Look for page */
+	while (page && page->tag != tag) {
+		prev = page;
+		page = page->next;
+	}
+
+	if(!page) printf("#error: page not found (in lookup by addr = %u)\n", addr);
+
+	return page;
+}
 
 /* Return mem page corresponding to an address. */
 struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)

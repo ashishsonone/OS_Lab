@@ -155,7 +155,7 @@ void ke_run(void)
 		//printf ("out - %p\n", ctx);
 		//printf("after\n");
 
-		printf("%d exec instr\n", ctx->pid);
+		printf("[%d] exec instr\n", ctx->pid);
 		for ( i = 0 ; i < ctx->instr_slice ; ++i) {
 			//printf(" non-empty instruction list\n");
 			handle_top_interrupt();

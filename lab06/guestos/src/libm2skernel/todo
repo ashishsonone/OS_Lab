@@ -3,4 +3,6 @@
 3. Deallocation of frames when process exits- done
 4. Deallocation of swap page - done
 5. mem_page_get_next() function to be modified
-6. 
+6. Which places to set the dirty bit
+7. Dynamic allocation of ram frames to process.
+8. Page fault simulation

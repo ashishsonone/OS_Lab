@@ -12,6 +12,14 @@ void print_queue (struct mem_t* mem)
 	printf ("\n");
 }
 
+int queue_size (struct mem_t* mem)
+{
+	int count = 0;
+	struct queue_node * curr = uhead;
+	for (; curr != NULL; curr = curr->next) count++;
+	return count;
+}
+
 void enqueue_frame (struct mem_t* mem, struct allocated_frame* next)
 {
 	// Create the next node.
@@ -38,7 +46,7 @@ void enqueue_frame (struct mem_t* mem, struct allocated_frame* next)
 		temp->next = new_node;
 	}
 
-	printf ("enqueue_frame : %u\n", next->logical_page->tag); // print_queue (mem);
+	printf ("enqueue_frame : %u | new queue size: %d\n", next->logical_page->tag, queue_size (mem)); // print_queue (mem);
 }
 
 struct allocated_frame* dequeue_frame (struct mem_t* mem)
@@ -51,7 +59,7 @@ struct allocated_frame* dequeue_frame (struct mem_t* mem)
 		// Check if (corresponding) page is pinned.
 		if (curr->page_eqv->logical_page->isPinned)
 		{
-			printf ("dequeue_frame : skipping pinned page\n"); // print_queue (mem);
+			printf ("dequeue_frame : skipping pinned page | current queue size: %d\n", queue_size (mem)); // print_queue (mem);
 			curr = curr->next;
 			continue;
 		}
@@ -69,11 +77,11 @@ struct allocated_frame* dequeue_frame (struct mem_t* mem)
 		// Free up memory.
 		free (curr);
 
-		printf ("dequeue_frame : %u\n", res->logical_page->tag); // print_queue (mem);
+		printf ("dequeue_frame : %u | new queue size: %d\n", res->logical_page->tag, queue_size (mem)); // print_queue (mem);
 		return res;
 	}
 
-	printf ("dequeue_frame : no frame in queue\n"); // print_queue (mem);
+	printf ("dequeue_frame : no frame in queue | new queue size: %d\n", queue_size (mem)); // print_queue (mem);
 	return NULL;
 }
 

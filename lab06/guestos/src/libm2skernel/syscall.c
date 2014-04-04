@@ -827,6 +827,59 @@ int handle_guest_syscalls() {
     int retval = 0;
     hello();
     switch (syscode) {
+
+
+        case syscall_code_pin_page:
+        {
+            uint32_t addr = isa_regs->ebx;
+            int size = isa_regs->ecx;
+
+            // mem_map(isa_ctx->mem, addr, size,mem_access_init | mem_access_read);
+
+            uint32_t tag1, tag2, tag;
+            struct mem_page_t *page;
+
+            /* Calculate page boundaries */
+            tag1 = addr & ~(MEM_PAGESIZE-1);
+            tag2 = (addr + size - 1) & ~(MEM_PAGESIZE-1);
+
+            for (tag = tag1; tag <= tag2; tag += MEM_PAGESIZE) {
+                page = page_table_lookup (isa_ctx->mem, tag);
+                if (!page) {
+                    printf ("#error: couldn't find page at given addr (to pin)\n"); 
+                    break;
+                }
+
+                if (page->isPinned) printf ("#debug: already pinned page %u\n", page->tag); 
+                else printf ("#status: pinning page %u\n", page->tag);
+                page->isPinned = true;
+            }
+
+            break;
+        }
+
+         case syscall_code_unpin_page:
+        {
+            uint32_t addr = isa_regs->ebx;
+            int size = isa_regs->ecx;
+
+            uint32_t tag1, tag2, tag;
+            struct mem_page_t *page;
+
+            /* Calculate page boundaries */
+            tag1 = addr & ~(MEM_PAGESIZE-1);
+            tag2 = (addr + size - 1) & ~(MEM_PAGESIZE-1);
+
+            for (tag = tag1; tag <= tag2; tag += MEM_PAGESIZE) {
+                page = page_table_lookup(isa_ctx->mem, tag);
+                if (! page->isPinned) printf ("#debug: already un-pinned page %u\n", page->tag); 
+                else printf ("#status: un-pinning page %u\n", page->tag);
+                page->isPinned = false;
+            }
+
+            break;
+        }
+
         case syscall_code_get_pid:
         {
             retval=get_pid();
