@@ -163,6 +163,8 @@ void ke_run(void)
 				printf("%d no more running\n", ctx->pid);
 				break;
 			}
+
+			fault_count_in_instruction = 0; //value printed in ctx_execute_inst in context.c
 			ctx_execute_inst(ctx); 
 
 			// if (ctx!=ke->running_list_head)

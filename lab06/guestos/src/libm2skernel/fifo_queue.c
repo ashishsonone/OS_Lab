@@ -59,7 +59,7 @@ struct allocated_frame* dequeue_frame (struct mem_t* mem)
 		// Check if (corresponding) page is pinned.
 		if (curr->page_eqv->logical_page->isPinned)
 		{
-			printf ("dequeue_frame : skipping pinned page | current queue size: %d\n", queue_size (mem)); // print_queue (mem);
+			printf ("dequeue_frame : skipping pinned page %u | current queue size: %d\n",curr->page_eqv->logical_page->tag, queue_size (mem)); // print_queue (mem);
 			curr = curr->next;
 			continue;
 		}

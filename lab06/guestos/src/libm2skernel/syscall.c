@@ -1620,6 +1620,7 @@ void syscall_do() {
                 /* 45 */
             case syscall_code_brk:
             {
+
                 uint32_t oldbrk, newbrk, size;
                 uint32_t oldbrk_rnd, newbrk_rnd;
 

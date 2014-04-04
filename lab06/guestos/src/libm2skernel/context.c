@@ -221,6 +221,8 @@ void ctx_execute_inst(struct ctx_t *ctx)
 	 * only if we are not in speculative mode. */
 	if (!ctx_get_status(ctx, ctx_specmode))
 		isa_execute_inst(buf);
+
+	printf("fault_count_in_instruction: instr %u : count %d \n",isa_eip, fault_count_in_instruction);
 }
 
 

@@ -510,6 +510,7 @@ void mem_free(struct mem_t *mem)
  * starting at address 'addr'. */
 uint32_t mem_map_space(struct mem_t *mem, uint32_t addr, int size)
 {
+
 	uint32_t tag_start, tag_end;
 
 	assert(!(addr & (MEM_PAGESIZE - 1)));
@@ -632,6 +633,8 @@ void mem_unmap(struct mem_t *mem, uint32_t addr, int size)
 void mem_map_host(struct mem_t *mem, struct fd_t *fd, uint32_t addr, int size,
 	enum mem_access_enum perm, void *host_ptr)
 {
+
+	printf("inside mem map host\n");
 	uint32_t ptr;
 	struct mem_page_t *page;
 	struct mem_host_mapping_t *hm;
@@ -681,6 +684,7 @@ void mem_map_host(struct mem_t *mem, struct fd_t *fd, uint32_t addr, int size,
  * A host call to 'munmap' is performed to unmap host space. */
 void mem_unmap_host(struct mem_t *mem, uint32_t addr)
 {
+	printf("inside mem unmap host\n");
 	int ret;
 	struct mem_host_mapping_t *hm, *hmprev;
 

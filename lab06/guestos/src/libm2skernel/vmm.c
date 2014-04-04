@@ -113,6 +113,7 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 
 void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 
+	fault_count_in_instruction++; //count the no of page faults
 	printf("Page Fault ::: ");
 
 	if(isa_ctx == NULL)

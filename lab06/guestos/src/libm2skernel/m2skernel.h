@@ -51,6 +51,8 @@ struct fd_t;
 int instr_slice;
 int initial_page_frame_count;
 
+int fault_count_in_instruction;
+
 /* Maximum length for paths */
 #define MAX_PATH_SIZE  200
 
