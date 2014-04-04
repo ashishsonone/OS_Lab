@@ -22,6 +22,7 @@ ram_frame get_free_ram_frame(){
 	for(i=0; i<RAM_FRAMES; i++){
 		if(physical_ram.frames[i].status == 0){
 			physical_ram.frames[i].status = 1;
+			printf("get_free_ram_frame : ram frame # %d\n", i);
 			return physical_ram.frames[i];
 		}
 	}
