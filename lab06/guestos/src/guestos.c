@@ -174,7 +174,11 @@ void set_defaults(void) {
 	get_param("NUM_SECTORS",param_value);
 	sectors=atoi(param_value);
     get_param("INITIAL_PAGE_FRAMES",param_value);
-    initial_page_frame_count = atoi(param_value);
+    INIT_FRAME_COUNT = atoi(param_value);
+
+    MAX_NONPINNED = INIT_FRAME_COUNT;
+    MIN_NONPINNED = INIT_FRAME_COUNT/2;
+
 
     printf("heads %d, tracks %d, sectors %d\n", heads, tracks, sectors);
 	sprintf(command,"(dd if=/dev/zero of=Sim_disk bs=%dx%dx%db count=1) 2> /dev/zero",heads,tracks,sectors);

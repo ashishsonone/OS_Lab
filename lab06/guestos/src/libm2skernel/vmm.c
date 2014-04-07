@@ -77,6 +77,7 @@ void release_all_allocated_frames_to_system(struct mem_t* mem ){
 	}
 }
 
+//Logical Page not needed anymore, called in mem_page_free();
 //release allocated frame corr to given logical tag
 //i.e remove entry from fifo queue & update its status(allocated_frame->logical_page = NULL)
 void release_allocated_frame(struct mem_t* mem, uint32_t tag){
@@ -161,6 +162,8 @@ void push_to_allocated_frames(struct mem_t* mem){
 	node->frame = get_free_ram_frame();
 	node->logical_page = NULL;
 
+	mem->num_frames_allocated++;
+
 	if(mem->allocated_frames_head==NULL){
 		mem->allocated_frames_head = node;
 		mem->allocated_frames_head->next = NULL;
@@ -172,9 +175,8 @@ void push_to_allocated_frames(struct mem_t* mem){
 }
 
 void allocate_initial_frames(struct mem_t* mem){
-	// initial_page_frame_count
 	int i=0;
-	for(i=0;i<initial_page_frame_count;i++){
+	for(i=0;i<INIT_FRAME_COUNT;i++){
 		push_to_allocated_frames(mem);		
 	}
 }

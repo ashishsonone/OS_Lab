@@ -49,9 +49,11 @@ struct ctx_t;
 struct fd_t;
 
 int instr_slice;
-int initial_page_frame_count;
+int INIT_FRAME_COUNT;
 
 int fault_count_in_instruction;
+int MAX_NONPINNED; //max no of non pinned frames so that process doens't unnecesarily occupy resources.
+int MIN_NONPINNED; //min no of non pinned frames so that pinning doesn't affect process's performance
 
 /* Maximum length for paths */
 #define MAX_PATH_SIZE  200
@@ -124,6 +126,18 @@ struct mem_t {
 	
 	struct queue_node* fifo_queue_head; 
 	struct allocated_frame* allocated_frames_head;
+
+	int num_frames_allocated; // logically allocated to process, there may be time when num_frame_allocated
+							  // is less than size of allocated_frames_head list,
+							  // but this just means that those excess no of frames(frames_to_release) 
+							  // must be released to system on next page fault
+
+	int frames_to_release; // no of frames to release on next page fault
+
+	// Note : At any point of time :
+	// num_frames_allocated + frames_to_release == size of allocated_frames_head list
+	
+	int num_pages_pinned;
 };
 
 

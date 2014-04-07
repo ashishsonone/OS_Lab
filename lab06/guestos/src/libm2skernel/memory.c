@@ -479,6 +479,9 @@ struct mem_t *mem_create()
 	mem = calloc(1, sizeof(struct mem_t));
 	mem->sharing = 1;
 	mem->safe = mem_safe_mode;
+
+	mem->num_frames_allocated = 0;
+	mem->num_pages_pinned = 0;
 	return mem;
 }
 
