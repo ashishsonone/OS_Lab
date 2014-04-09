@@ -27,3 +27,7 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page);
 void allocate_initial_frames(struct mem_t* mem);
 void free_allocated_frame_from_queue(struct mem_t* mem, uint32_t tag);
 void release_all_allocated_frames_to_system(struct mem_t* mem );
+
+void remove_an_allocated_frame(struct mem_t* mem);
+struct allocated_frame* pop_free_allocated_frame(struct mem_t* mem );
+struct allocated_frame* pop_this_allocated_frame(struct mem_t* mem, uint32_t logical_tag);

@@ -1,5 +1,6 @@
 #include "vmm.h"
 
+// ================== MANAGE SWAP PAGES =======================
 void init_vmm(){
 	printf("initialising VMM. \n");
 	hole_list_start = NULL;
@@ -66,31 +67,8 @@ struct allocated_frame* get_free_allocated_frame(struct mem_t* mem ){
 	return NULL;
 }
 
-//release all allocated ram frames permanently calling "release_ram_frame()" each time
-void release_all_allocated_frames_to_system(struct mem_t* mem ){
-	struct allocated_frame* old;
-	while(mem->allocated_frames_head!=NULL){
-		release_ram_frame(mem->allocated_frames_head->frame.frame_id); //release the ram frame
-		old = mem->allocated_frames_head;
-		mem->allocated_frames_head = old->next;
-		free(old); //free old allocated_frame struct pointed to by old
-	}
-}
 
-//Logical Page not needed anymore, called in mem_page_free();
-//release allocated frame corr to given logical tag
-//i.e remove entry from fifo queue & update its status(allocated_frame->logical_page = NULL)
-void release_allocated_frame(struct mem_t* mem, uint32_t tag){
-	//	 So need fifo_queue functions to remove the entry
-	//       i.e  delete the entry s.t [queue_ptr->page_eqv->logical_page->tag == giventag]
-	//				and return the entry  (if any)
-	//     allocated_frame * deque_this_allocated_frame(struct mem_t* mem, uint32_t tag)
-	allocated_frame* target_frame = deque_this_allocated_frame(mem, tag);
-	if(target_frame != NULL){
-		printf("release_allocated_frame : tag %u \n", tag);
-		target_frame->logical_page = NULL; //Now its free to be reused
-	}
-}
+//======================== PAGE FAULT HANDLING ======================
 
 void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 	if(old_page==NULL){
@@ -113,6 +91,14 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 
 
 void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
+	//First remove the frames_to_release no of frames
+	// As a part of Dynamic memory allocation
+	printf("Dynamic memory deallocation inside handle_page_fault\n");
+	int i;
+	while(mem->frames_to_release > 0){
+		mem->frames_to_release--;
+		remove_an_allocated_frame(mem);
+	}
 
 	fault_count_in_instruction++; //count the no of page faults
 	printf("Page Fault ::: ");
@@ -156,6 +142,106 @@ void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 	enqueue_frame(mem,free_frame);
 
 }
+
+
+//============================  MANANGE ALLOCATED FRAMES =================
+//Logical Page not needed anymore, called in mem_page_free();
+//release allocated frame corr to given logical tag
+//i.e remove entry from fifo queue & update its status(allocated_frame->logical_page = NULL)
+void release_allocated_frame(struct mem_t* mem, uint32_t tag){
+	//	 So need fifo_queue functions to remove the entry
+	//       i.e  delete the entry s.t [queue_ptr->page_eqv->logical_page->tag == giventag]
+	//				and return the entry  (if any)
+	//     allocated_frame * deque_this_allocated_frame(struct mem_t* mem, uint32_t tag)
+	allocated_frame* target_frame = deque_this_allocated_frame(mem, tag);
+	if(target_frame != NULL){
+		printf("release_allocated_frame : tag %u \n", tag);
+		target_frame->logical_page = NULL; //Now its free to be reused
+	}
+}
+
+
+//================ MANAGE MEMORY(FRAME) ALLOCATION =======================
+
+//release all allocated ram frames permanently calling "release_ram_frame()" each time
+//NOTE : called in mem_free() : no need to consider paging out pages and all
+void release_all_allocated_frames_to_system(struct mem_t* mem ){
+	struct allocated_frame* old;
+	while(mem->allocated_frames_head!=NULL){
+		release_ram_frame(mem->allocated_frames_head->frame.frame_id); //release the ram frame
+		old = mem->allocated_frames_head;
+		mem->allocated_frames_head = old->next;
+		free(old); //free old allocated_frame struct pointed to by old
+	}
+}
+
+// This function picks a suitable allocated-frame(either free or unpinned)
+// and releases to system the associated ram frame
+void remove_an_allocated_frame(struct mem_t* mem){
+	struct allocated_frame * target = pop_free_allocated_frame(mem); //pop a free frame from main list
+	if(target == NULL){
+		target = dequeue_frame(mem); //pop from queue
+		if(target==NULL){
+			// all the pages are pinned. Allocate new frames to the process.
+			printf("remove_an_allocated_frame :  All pages are pinned. Should Not happen\n");
+			exit(0);
+		}
+		else{
+			printf("remove_an_allocated_frame : releasing busy frame : page %u\n", target->logical_page->tag);
+			page_out(mem, target->logical_page);
+			pop_this_allocated_frame(mem, target->logical_page->tag); //pop it from main list
+		}
+	}
+	else{
+		printf("remove_an_allocated_frame : releasing a free ram frame\n");
+	}
+	release_ram_frame(target->frame.frame_id);
+}
+
+//from allocated_frame_list
+struct allocated_frame* pop_free_allocated_frame(struct mem_t* mem ){
+	struct allocated_frame* prev = NULL;
+    struct allocated_frame* head = mem->allocated_frames_head;
+
+    while(head!=NULL){
+        if(head->logical_page == NULL){
+            if(prev == NULL){
+                mem->allocated_frames_head = mem->allocated_frames_head->next;
+            }
+            else {
+                prev->next = head->next;
+            }
+            return head;
+        }
+        prev = head;
+        head = head->next;
+    }
+    return NULL;
+}
+
+//from allocated frame list. Called after deque().
+struct allocated_frame* pop_this_allocated_frame(struct mem_t* mem, uint32_t logical_tag){
+	struct allocated_frame* prev = NULL;
+    struct allocated_frame* head = mem->allocated_frames_head;
+
+    while(head!=NULL){
+    	if(head->logical_page == NULL) 
+    		printf("This function should not be called if allocated frame list contains some free frames\n");
+        if(head->logical_page != NULL && head->logical_page->tag == logical_tag){
+            if(prev == NULL){
+                mem->allocated_frames_head = mem->allocated_frames_head->next;
+            }
+            else {
+                prev->next = head->next;
+            }
+            return head;
+        }
+        prev = head;
+        head = head->next;
+    }
+    return NULL;
+}
+
 
 void push_to_allocated_frames(struct mem_t* mem){
 	allocated_frame* node = (allocated_frame*) malloc(sizeof(struct allocated_frame));
