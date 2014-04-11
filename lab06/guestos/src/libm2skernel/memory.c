@@ -30,20 +30,27 @@ int mem_safe_mode = 1;
 int *disk_protection_map;
 int disk_protection_map_size; //=no of blocks
 
-struct mem_page_t *page_table_lookup(struct mem_t* mem, uint32_t addr){
+struct mem_page_t *page_table_lookup(struct mem_t* mem, uint32_t addr)
+{
 	uint32_t index, tag;
-	struct mem_page_t *prev, *page;
+	struct mem_page_t *page;
 
 	tag = addr & ~(MEM_PAGESIZE - 1);
+
+	if (isa_ctx) {
+		page = tlb_lookup (tag, isa_ctx->pid);
+		if (page!=NULL) return page;
+	}
+
 	index = (addr >> MEM_LOGPAGESIZE) % MEM_PAGE_COUNT;
 	page = mem->pages[index];
-	prev = NULL;
-	
 	/* Look for page */
-	while (page && page->tag != tag) {
-		prev = page;
+	while (page && page->tag != tag)
 		page = page->next;
-	}
+
+	if (isa_ctx)
+		if (page!=NULL)
+			add_tlb_entry(page, isa_ctx->pid);
 
 	if(!page) printf("#error: page not found (in lookup by addr = %u)\n", addr);
 
@@ -52,7 +59,7 @@ struct mem_page_t *page_table_lookup(struct mem_t* mem, uint32_t addr){
 
 /* Return mem page corresponding to an address. */
 struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
-{
+{	
 	//printf("mem_page_get called for addr %u\n", addr);
 	//printf("mem_page_get old log page tag: %u \n", mem->bound_logical_page_tag);
 
@@ -61,6 +68,18 @@ struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
 	struct mem_page_t *prev, *page;
 
 	tag = addr & ~(MEM_PAGESIZE - 1);
+
+	// Checking entry in TLB.
+	if (isa_ctx) {
+		page = tlb_lookup (tag, isa_ctx->pid);
+		if (page!=NULL) {
+			if (page->frame_id == -1)
+				if (LOADINGPHASE != 1)
+					handle_page_fault(mem, page);
+			return page;
+		}
+	}
+
 	index = (addr >> MEM_LOGPAGESIZE) % MEM_PAGE_COUNT;
 	page = mem->pages[index];
 	prev = NULL;
@@ -83,9 +102,15 @@ struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
 	//before returning make sure page has ram frame allocated
 	if(page!= NULL && page->frame_id == -1){
 		//printf("Page fault\n");
-		if(LOADINGPHASE != 1) handle_page_fault(mem, page);
+		if (LOADINGPHASE != 1)
+			handle_page_fault(mem, page);
 	}
 	
+	// Adding entry to TLB
+	if (isa_ctx)
+		if (page!=NULL)
+			add_tlb_entry(page, isa_ctx->pid);
+
 	/* Return found page */
 	return page;	 
 }

@@ -23,7 +23,7 @@ uint32_t allocate_page(){
 }
 
 uint32_t deallocate_page(uint32_t swap_page_addr){
-	printf(" deallocate swap page # %d\n", swap_page_addr);
+	// printf(" deallocate swap page # %d\n", swap_page_addr);
 	hole * new_head = (hole *) malloc(sizeof(hole));
 	new_head->disk_addr = swap_page_addr;
 	new_head->next = hole_list_start;
