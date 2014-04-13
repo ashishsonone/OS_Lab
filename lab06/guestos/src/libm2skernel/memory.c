@@ -274,17 +274,22 @@ void mem_copy(struct mem_t *mem, uint32_t dest, uint32_t src, int size)
 	while (size > 0) {
 		
 		/* Get source and destination pages */
-		page_dest = mem_page_get(mem, dest);
 		page_src = mem_page_get(mem, src);
-		assert(page_src && page_dest);
+		assert(page_src);
+		unsigned char * temp_buf = malloc(MEM_PAGESIZE);
+		memcpy(temp_buf, page_src->data, MEM_PAGESIZE);
+		
+
+		page_dest = mem_page_get(mem, dest);
+		assert(page_dest);
 		
 		/* Different actions depending on whether source and
 		 * destination page data are allocated. */
-		if (page_src->data) {
+		if (temp_buf) {
 			if (!page_dest->data)//Now this will not happen
 								//(as ram frame is always allocated during creating of page)
 				page_dest->data = malloc(MEM_PAGESIZE);
-			memcpy(page_dest->data, page_src->data, MEM_PAGESIZE);
+			memcpy(page_dest->data, temp_buf, MEM_PAGESIZE);
 		} else {
 			if (page_dest->data)
 				memset(page_dest->data, 0, MEM_PAGESIZE);
@@ -334,7 +339,7 @@ void *mem_get_buffer(struct mem_t *mem, uint32_t addr, int size,
 static void mem_access_page_boundary(struct mem_t *mem, uint32_t addr,
 	int size, void *buf, enum mem_access_enum access)
 {
-//	printf("mem access page boundary : addr : %u\n", addr);
+	//printf("mem access page boundary : addr : %u\n", addr);
 	struct mem_page_t *page;
 	uint32_t offset;
 
@@ -465,6 +470,7 @@ void mem_access(struct mem_t *mem, uint32_t addr, int size, void *buf,
 	while (size) {
 		offset = addr & (MEM_PAGESIZE - 1);
 		chunksize = MIN(size, MEM_PAGESIZE - offset);
+		printf("Inside mem_access\n");
 		mem_access_page_boundary(mem, addr, chunksize, buf, access);
 
 		size -= chunksize;

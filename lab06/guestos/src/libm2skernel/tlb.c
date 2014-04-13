@@ -16,11 +16,11 @@ struct mem_page_t* tlb_lookup(uint32_t tag, int proc_id){
 	int i;
 	for(i=0;i<TLB_SIZE;i++)
 		if (tag==tlb_entry[i].tag && proc_id==tlb_entry[i].proc_id) {
-			//printf ("#status: found tlb entry for tag %u of process %d\n", tag, proc_id);
+			printf ("tlb_lookup : #status: found tlb entry for tag %u of process %d\n", tag, proc_id);
 			return tlb_entry[i].page;
 		}
 	
-	printf ("#status: not found tlb entry for tag %u of process %d\n", tag, proc_id);
+	printf ("tlb_lookup : #status: not found tlb entry for tag %u of process %d\n", tag, proc_id);
 
 	return NULL;
 }

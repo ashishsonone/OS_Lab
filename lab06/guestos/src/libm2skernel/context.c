@@ -222,7 +222,7 @@ void ctx_execute_inst(struct ctx_t *ctx)
 	if (!ctx_get_status(ctx, ctx_specmode))
 		isa_execute_inst(buf);
 
-	printf("fault_count_in_instruction: instr %u : count %d \n",isa_eip, fault_count_in_instruction);
+	//printf("fault_count_in_instruction: instr %u : count %d \n",isa_eip, fault_count_in_instruction);
 }
 
 
