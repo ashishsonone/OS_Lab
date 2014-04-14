@@ -97,7 +97,9 @@ struct mem_page_t *mem_page_get(struct mem_t *mem, uint32_t addr)
 		mem->pages[index] = page;
 	}
 
-	if(page==NULL) printf("Might be allocating page. \n");
+	if(page==NULL){
+		//printf("Might be allocating page. \n");
+	}
 	//else printf("mem_page_get_page frame id : %d", page->frame_id);
 	//before returning make sure page has ram frame allocated
 	if(page!= NULL && page->frame_id == -1){
@@ -470,7 +472,7 @@ void mem_access(struct mem_t *mem, uint32_t addr, int size, void *buf,
 	while (size) {
 		offset = addr & (MEM_PAGESIZE - 1);
 		chunksize = MIN(size, MEM_PAGESIZE - offset);
-		printf("Inside mem_access\n");
+		//printf("Inside mem_access\n");
 		mem_access_page_boundary(mem, addr, chunksize, buf, access);
 
 		size -= chunksize;

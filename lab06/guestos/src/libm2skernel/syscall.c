@@ -3435,6 +3435,7 @@ void syscall_do() {
                  *   void *addr2, int val3); */
             case syscall_code_futex:
             {
+                printf("futex\n");
                 uint32_t addr1, op, val1, ptimeout, addr2, val3;
                 uint32_t timeout_sec, timeout_usec;
                 uint32_t futex, cmd, bitset;

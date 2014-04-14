@@ -20,6 +20,8 @@ libm2skernel_a_SOURCES = m2skernel.h \
 	vmm.c \
 	global_ram.c\
 	fifo_queue.c \
+	tlb.c \
+	vmm.c \
 	syscall.dat
 AM_CFLAGS = -Wall -fno-strict-aliasing -m32
 

@@ -31,7 +31,7 @@ uint32_t deallocate_page(uint32_t swap_page_addr){
 	return swap_page_addr;
 }
 
-void read_swap_page(char * buff, uint32_t swap_page_addr){
+void read_swap_page(unsigned char * buff, uint32_t swap_page_addr){
 	uint32_t start_byte = (swap_page_addr<<MEM_LOGPAGESIZE);
 	FILE *fp = fopen("Sim_disk", "rb");
     if(fp == NULL){
@@ -43,8 +43,11 @@ void read_swap_page(char * buff, uint32_t swap_page_addr){
     fclose(fp);
 }
 
-void write_swap_page(char * buff, uint32_t swap_page_addr){
+void write_swap_page(unsigned char * buff, uint32_t swap_page_addr){
 	uint32_t start_byte = (swap_page_addr<<MEM_LOGPAGESIZE);
+
+	long int x = start_byte;
+	//printf("long : %ld, unsigned : %u\n", x,start_byte);
 	FILE *fp = fopen("Sim_disk", "rb+");
     if(fp == NULL){
         printf("Couldn't open HardDisk write");
@@ -93,7 +96,7 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 void handle_page_fault(struct mem_t *mem, struct mem_page_t* page){
 	//First remove the frames_to_release no of frames
 	// As a part of Dynamic memory allocation
-	printf("Dynamic memory deallocation inside handle_page_fault\n");
+	if(mem->frames_to_release > 0) printf("Dynamic memory deallocation(remove %d) inside handle_page_fault\n", mem->frames_to_release);
 	int i;
 	while(mem->frames_to_release > 0){
 		mem->frames_to_release--;
