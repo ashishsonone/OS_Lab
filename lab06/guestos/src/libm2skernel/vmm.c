@@ -32,6 +32,9 @@ uint32_t deallocate_page(uint32_t swap_page_addr){
 }
 
 void read_swap_page(unsigned char * buff, uint32_t swap_page_addr){
+
+	page_in_out_count++; //To simulate page fault at the end of instruction
+
 	uint32_t start_byte = (swap_page_addr<<MEM_LOGPAGESIZE);
 	FILE *fp = fopen("Sim_disk", "rb");
     if(fp == NULL){
@@ -44,6 +47,9 @@ void read_swap_page(unsigned char * buff, uint32_t swap_page_addr){
 }
 
 void write_swap_page(unsigned char * buff, uint32_t swap_page_addr){
+
+	page_in_out_count++; //To simulate page fault at the end of instruction
+	
 	uint32_t start_byte = (swap_page_addr<<MEM_LOGPAGESIZE);
 
 	long int x = start_byte;
@@ -78,13 +84,16 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 		printf("Error : old page cannot be NULL in page out\n"	);
 		exit(0);
 	}
-	old_page->dirty_bit=1;// for testing
+	//old_page->dirty_bit=1;// for testing
 	//printf("setting dirty bit = 1 for testing\n");
 	if(old_page->dirty_bit==1){	
-		printf("Page out :%u ",old_page->tag);	
+		printf("Page out :- #%u  IsDirty",old_page->tag);	
 		uint32_t disk_page = old_page->swap_page_no;
 		unsigned char* buff = old_page->data;
 		write_swap_page(buff,disk_page);
+	}
+	else{
+		printf("Page out :- NONE NotDirty\n");
 	}
 	old_page->frame_id = -1;
 	old_page->data = NULL;

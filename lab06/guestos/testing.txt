@@ -1,0 +1,32 @@
+Ram Frames: ram frames must be freed at end of process
+     ./src/guestos < in.txt  | grep "get_free_ram_frame"
+     ./src/guestos < in.txt  | grep "release_ram_frame"
+
+To see how ram frames are allocated and deallocated dynamically
+    ./src/guestos < in.txt  | grep "ram frame #"
+ 
+
+Fifo Queue: if logical page is freed, its allocated frame(if any) must be freed
+    ./src/guestos < in.txt  | grep "release_allocated_frame :" | wc
+
+
+Swap: pages allocated must be deallocated
+    ./src/guestos < in.txt  | grep " deallocate swap page" |wc
+    ./src/guestos < in.txt  | grep " allocate swap page" |wc
+
+Page fault : no of page faults
+    ./src/guestos < in.txt  | grep "Page Fault :::"  |wc
+
+TLB Misses vs Success
+    ./src/guestos < in.txt  | grep "found tlb entry for tag" | wc
+    ./src/guestos < in.txt  | grep "not found tlb entry" | wc
+
+Pinning in Action
+    ./src/guestos < in.txt  | grep -E "pinning page|dequeue_frame"
+
+Page out IsDirty vs NotDirty
+    ./src/guestos < in.txt | grep "IsDirty"   |wc
+    ./src/guestos < in.txt | grep "NotDirty"  |wc
+
+See page fault in action(using pin.out, l.out) 
+    ./src/guestos < in.txt  | grep -E "Blocking process for page fault|io complete" --color=always | less -R

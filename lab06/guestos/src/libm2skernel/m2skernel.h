@@ -52,6 +52,7 @@ int instr_slice;
 int INIT_FRAME_COUNT;
 
 int fault_count_in_instruction;
+int page_in_out_count;
 int MAX_NONPINNED; //max no of non pinned frames so that process doens't unnecesarily occupy resources.
 int MIN_NONPINNED; //min no of non pinned frames so that pinning doesn't affect process's performance
 

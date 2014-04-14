@@ -89,7 +89,7 @@ void interrupt_handler(struct interrupt in){
 	if(in.type==iocomplete){
 		//printf("passing ctx_running\n");
 		ctx_update_status(in.ctx, ctx_running);
-		printf("%d: io complete; changed status to running\n", in.ctx->pid);
+		printf("[%d] : io complete; changed status to running\n", in.ctx->pid);
 	}
 
 	else{
@@ -164,9 +164,24 @@ void ke_run(void)
 				break;
 			}
 
+			page_in_out_count = 0;
 			fault_count_in_instruction = 0; //value printed in ctx_execute_inst in context.c
 			ctx_execute_inst(ctx); 
 
+			printf("[%d] : page_in_out_count : %d\n", ctx->pid, page_in_out_count);
+
+			
+
+			//if page_in_out_count > 0, then put the process to suspended list and insert an interrupt
+			if(page_in_out_count > 0){
+				printf("[%d] : Blocking process for page fault\n", ctx->pid);
+				ctx_update_status(isa_ctx, ctx_suspended);
+	            struct interrupt in;
+	            in.instr_no = isa_inst_count + page_in_out_count * 100;
+	            in.type = iocomplete;
+	            in.ctx = isa_ctx;
+	            insert(in);
+	        }
 			// if (ctx!=ke->running_list_head)
 			// 	break;
 		}
