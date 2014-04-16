@@ -21,8 +21,8 @@ TLB Misses vs Success
     ./src/guestos < in.txt  | grep "found tlb entry for tag" | wc
     ./src/guestos < in.txt  | grep "not found tlb entry" | wc
 
-Pinning in Action
-    ./src/guestos < in.txt  | grep -E "pinning page|dequeue_frame"
+Pinning in Action and how it affects page replacement policy
+    ./src/guestos < in.txt  | grep -E "pinning page|dequeue_frame|un-pinning page"
 
 Page out IsDirty vs NotDirty
     ./src/guestos < in.txt | grep "IsDirty"   |wc
