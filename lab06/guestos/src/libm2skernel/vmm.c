@@ -2,9 +2,10 @@
 
 // ================== MANAGE SWAP PAGES =======================
 void init_vmm(){
-	printf("initialising VMM. \n");
+	printf("Initialising VMM...");
 	hole_list_start = NULL;
 	last_allocated_swap = 0;
+	printf (" Done!\n");
 }
 
 uint32_t allocate_page(){
@@ -23,7 +24,7 @@ uint32_t allocate_page(){
 }
 
 uint32_t deallocate_page(uint32_t swap_page_addr){
-	// printf(" deallocate swap page # %d\n", swap_page_addr);
+	printf(" deallocate swap page # %d\n", swap_page_addr);
 	hole * new_head = (hole *) malloc(sizeof(hole));
 	new_head->disk_addr = swap_page_addr;
 	new_head->next = hole_list_start;
@@ -87,13 +88,13 @@ void page_out(struct mem_t *mem, struct mem_page_t* old_page){
 	//old_page->dirty_bit=1;// for testing
 	//printf("setting dirty bit = 1 for testing\n");
 	if(old_page->dirty_bit==1){	
-		printf("Page out :- #%u  IsDirty",old_page->tag);	
+		printf("[%d] : Page out :- #%u  IsDirty | ", (isa_ctx==NULL)?0:isa_ctx->pid, old_page->tag);	
 		uint32_t disk_page = old_page->swap_page_no;
 		unsigned char* buff = old_page->data;
 		write_swap_page(buff,disk_page);
 	}
 	else{
-		printf("Page out :- NONE NotDirty\n");
+		printf("Page out :- NONE NotDirty | \n");
 	}
 	old_page->frame_id = -1;
 	old_page->data = NULL;

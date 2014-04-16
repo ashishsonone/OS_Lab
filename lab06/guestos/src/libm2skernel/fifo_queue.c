@@ -1,4 +1,5 @@
 #include "fifo_queue.h"
+#include "m2skernel.h"
 
 void print_queue (struct mem_t* mem)
 {
@@ -45,8 +46,7 @@ void enqueue_frame (struct mem_t* mem, struct allocated_frame* next)
 		new_node->prev = temp;
 		temp->next = new_node;
 	}
-
-	printf ("enqueue_frame : %u | new queue size: %d\n", next->logical_page->tag, queue_size (mem)); // print_queue (mem);
+	printf ("[%d] : enqueue_frame : %u | new queue size: %d\n", (isa_ctx==NULL)?0:isa_ctx->pid, next->logical_page->tag, queue_size (mem)); // print_queue (mem);
 }
 
 struct allocated_frame* dequeue_frame (struct mem_t* mem)
@@ -59,7 +59,7 @@ struct allocated_frame* dequeue_frame (struct mem_t* mem)
 		// Check if (corresponding) page is pinned.
 		if (curr->page_eqv->logical_page->isPinned)
 		{
-			printf ("dequeue_frame : skipping pinned page %u | current queue size: %d\n",curr->page_eqv->logical_page->tag, queue_size (mem)); // print_queue (mem);
+			printf ("[%d] : dequeue_frame : skipping pinned page %u | current queue size: %d\n",(isa_ctx==NULL)?0:isa_ctx->pid,curr->page_eqv->logical_page->tag, queue_size (mem)); // print_queue (mem);
 			curr = curr->next;
 			continue;
 		}
@@ -76,12 +76,10 @@ struct allocated_frame* dequeue_frame (struct mem_t* mem)
 		
 		// Free up memory.
 		free (curr);
-
-		printf ("dequeue_frame : %u | new queue size: %d\n", res->logical_page->tag, queue_size (mem)); // print_queue (mem);
+		printf ("[%d] : dequeue_frame : %u | new queue size: %d\n",(isa_ctx==NULL)?0:isa_ctx->pid, res->logical_page->tag, queue_size (mem)); // print_queue (mem);
 		return res;
 	}
-
-	printf ("dequeue_frame : no frame in queue | new queue size: %d\n", queue_size (mem)); // print_queue (mem);
+	printf ("[%d] : dequeue_frame : no frame in queue | new queue size: %d\n",(isa_ctx==NULL)?0:isa_ctx->pid, queue_size (mem)); // print_queue (mem);
 	return NULL;
 }
 

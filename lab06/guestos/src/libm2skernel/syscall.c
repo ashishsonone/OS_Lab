@@ -854,8 +854,8 @@ int handle_guest_syscalls() {
                             page->tag, isa_mem->num_pages_pinned, isa_mem->frames_to_release, isa_mem->num_frames_allocated); 
                 else {
                     isa_mem->num_pages_pinned++;
-                    printf ("#status: pinning page %u : pin count %d : frames_to_release %d : num_allocated %d\n",
-                            page->tag, isa_mem->num_pages_pinned, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
+                    printf ("[%d] : #status: pinning page %u : pin count %d : frames_to_release %d : num_allocated %d\n",
+                            isa_ctx->pid, page->tag, isa_mem->num_pages_pinned, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
                     
                     //--- DYNAMIC ALLOCATION ---
                     //check if unpinned count is below minimum
@@ -867,14 +867,14 @@ int handle_guest_syscalls() {
                         if(isa_mem->frames_to_release > 0){
                             isa_mem->frames_to_release--;
                             isa_mem->num_frames_allocated++;
-                            printf("syscall pin : reallocated frame from among : frames_to_release--: frames_to_release %d : num_allocated %d \n",
-                                isa_mem->frames_to_release, isa_mem->num_frames_allocated);
+                            printf("[%d] : syscall pin : reallocated frame from among : frames_to_release--: frames_to_release %d : num_allocated %d \n",
+                                isa_ctx->pid, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
                         }
                         else{
-                            printf("syscall pin :");
+                            printf("[%d] : syscall pin :", isa_ctx->pid);
                             push_to_allocated_frames(isa_mem);
-                            printf("continued syscall pin : frames_to_release %d : num_allocated %d\n",
-                                isa_mem->frames_to_release, isa_mem->num_frames_allocated);
+                            printf("[%d] : continued syscall pin : frames_to_release %d : num_allocated %d\n",
+                                isa_ctx->pid, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
                         }
 
                         //now assert that nonpinned frames >= MIN
@@ -909,8 +909,8 @@ int handle_guest_syscalls() {
                          page->tag, isa_mem->num_pages_pinned, isa_mem->frames_to_release, isa_mem->num_frames_allocated); 
                 else{
                     isa_mem->num_pages_pinned--;
-                    printf ("#status: un-pinning page %u : pin count %d : frames_to_release %d : num_allocated %d\n",
-                         page->tag, isa_mem->num_pages_pinned, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
+                    printf ("[%d] : #status: un-pinning page %u : pin count %d : frames_to_release %d : num_allocated %d\n",
+                         isa_ctx->pid, page->tag, isa_mem->num_pages_pinned, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
 
                     //--- DYNAMIC ALLOCATION ---
                     int nonpinned_frames = isa_mem->num_frames_allocated - isa_mem->num_pages_pinned;
@@ -920,8 +920,8 @@ int handle_guest_syscalls() {
                         isa_mem->num_frames_allocated--;
                         isa_mem->frames_to_release++;
                         
-                        printf("syscall unpin : logically released a frame : frames_to_release++ : frames_to_release %d : num_allocated %d\n",
-                            isa_mem->frames_to_release, isa_mem->num_frames_allocated);
+                        printf("[%d] : syscall unpin : logically released a frame : frames_to_release++ : frames_to_release %d : num_allocated %d\n",
+                            isa_ctx->pid, isa_mem->frames_to_release, isa_mem->num_frames_allocated);
                         //now assert that nonpinned frames <= MAX
                         nonpinned_frames = isa_mem->num_frames_allocated - isa_mem->num_pages_pinned;
                         if(nonpinned_frames > MAX_NONPINNED){

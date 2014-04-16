@@ -180,21 +180,21 @@ void set_defaults(void) {
     MIN_NONPINNED = INIT_FRAME_COUNT/2;
 
 
-    printf("heads %d, tracks %d, sectors %d\n", heads, tracks, sectors);
+    // printf("heads %d, tracks %d, sectors %d\n", heads, tracks, sectors);
 	sprintf(command,"(dd if=/dev/zero of=Sim_disk bs=%dx%dx%db count=1) 2> /dev/zero",heads,tracks,sectors);
-	printf("dd command executed : %s", command);
+	// printf("dd command executed : %s", command);
     system(command);
-    system("ls -l Sim_disk");
+    // system("ls -l Sim_disk");
 
     /* Allocate and init disk_protection_map */
     disk_protection_map_size = heads*tracks*sectors;
     disk_protection_map = (int*) malloc(disk_protection_map_size * sizeof(int));
-    printf("disk_protection_map size %d allocated\n", disk_protection_map_size);
+    //printf("disk_protection_map size %d allocated\n", disk_protection_map_size);
     int i;
     for(i=0; i < disk_protection_map_size; i++){
         disk_protection_map[i] = -1;
     }
-    printf("disk_protection_map initialised to -1\n");
+    //printf("disk_protection_map initialised to -1\n");
     initialize_pq(); // initialised the priority queue for interrupt handling
     init_global_ram(); //initialise global ram
     init_vmm(); //initialise virtual mem manager
@@ -229,11 +229,9 @@ int main(int argc, char **argv) {
     //printf("\n The length of the hardcoded complete path of simple file is : %d\n", strlen(name));
     //argv[1] = "/home/prajakta/praj_multi2sim_RandD/guestos_multi2sim/mytest/simple";
 
-
-    fprintf(stderr, "********************************************************");
-    fprintf(stderr, "\n WELCOME TO GUESTOS\n");
-    fprintf(stderr, "********************************************************\n");
-    //Subhajit Changes
+    fprintf (stdout,  "     ************************");
+    fprintf(stdout, "\n     ** Welcome to GuestOS **\n");
+    fprintf (stdout,  "     ************************\n");
 
     /* Options */
     opt_init();
@@ -362,14 +360,14 @@ void shell() {
     char temp[400];
     char user_prog_path[400];
     int uid;
-    printf("\n Shell begins:\n");
-    printf("\n guestos:\n");
+    //printf("\n Shell begins:\n");
+    //printf("\n guestos:\n");
     fflush(stdin);
-    printf("How many user processes to run?");
+    printf("\n#pranali: How many user processes to run? ");
     scanf("%d", &number_of_processes);
     f_in = fopen("configfile", "w");
     for (i = 0; i < number_of_processes; i++) {
-        printf("\n\n\n guestos:Enter the full path of user program to execute:");
+        printf("\n#pranali: Enter the path of (user) program to execute: ");
         fflush(stdin);
         //fgets(user_prog_path,max_path_length,stdin);
         //gets(user_prog_path);

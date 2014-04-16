@@ -127,13 +127,13 @@ void ke_run(void)
 
 	if(!ke->running_list_head){
 		if (!print_no_more) {
-			printf("Running list empty !\n");
+			printf("============  Running list empty ! . Fast forward to next interrupt. ============\n");
 			print_no_more = true;
 			pl = true;
 		}
 		if(!isEmpty()){
 			isa_inst_count = findMin().instr_no;
-			printf("non-empty instruction list\n");
+			//printf("non-empty instruction list\n");
 			handle_top_interrupt();
 		}
 		else{
@@ -168,7 +168,7 @@ void ke_run(void)
 			fault_count_in_instruction = 0; //value printed in ctx_execute_inst in context.c
 			ctx_execute_inst(ctx); 
 
-			printf("[%d] : page_in_out_count : %d\n", ctx->pid, page_in_out_count);
+			printf("ins_count: %"PRIu64" | [%d] : page_in_out_count : %d\n", isa_inst_count, ctx->pid, page_in_out_count);
 
 			
 
@@ -177,7 +177,7 @@ void ke_run(void)
 				printf("[%d] : Blocking process for page fault\n", ctx->pid);
 				ctx_update_status(isa_ctx, ctx_suspended);
 	            struct interrupt in;
-	            in.instr_no = isa_inst_count + page_in_out_count * 100;
+	            in.instr_no = isa_inst_count + page_in_out_count * 10;
 	            in.type = iocomplete;
 	            in.ctx = isa_ctx;
 	            insert(in);

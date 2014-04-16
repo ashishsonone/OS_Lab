@@ -8,7 +8,7 @@ typedef struct hole{
 	struct hole * next;
 } hole;
 
-hole * hole_list_start; //TODO init this
+hole * hole_list_start; //
 uint32_t last_allocated_swap;
 
 void init_vmm();

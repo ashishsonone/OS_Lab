@@ -7,14 +7,14 @@ global_ram physical_ram;
 
 void init_global_ram(){
 	int i;
-	printf("initialising global ram .......: \n");
+	printf("Initialising Global RAM...");
 	for(i=0; i<RAM_FRAMES; i++){
 		//printf("%d, ", i);
 		physical_ram.frames[i].frame_id = i;
 		physical_ram.frames[i].data = calloc(1, MEM_PAGESIZE);
 		physical_ram.frames[i].status = 0;	
 	}
-	printf("done init global ram : \n");
+	printf(" Done!\n");
 }
 
 ram_frame get_free_ram_frame(){
@@ -27,7 +27,7 @@ ram_frame get_free_ram_frame(){
 		}
 	}
 
-	printf("Should Not Reach Here. Memory exaushted. No more free frames in RAM\n");
+	printf("Should Not Reach Here. Memory exhausted. No more free frames in RAM :(\n");
 	exit(0);
 }
 

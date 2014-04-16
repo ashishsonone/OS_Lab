@@ -20,6 +20,9 @@
 #ifndef M2SKERNEL_H
 #define M2SKERNEL_H
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #include <mhandle.h>
 #include <debug.h>
 #include <config.h>
